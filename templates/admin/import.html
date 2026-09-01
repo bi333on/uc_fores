@@ -1,0 +1,110 @@
+{% extends "admin/base.html" %}
+{% block title %}Импорт из WordPress{% endblock %}
+{% block content %}
+<h1>Импорт из WordPress (Quiz And Survey Master)</h1>
+
+<div class="panel">
+  <h2>1. Подключение к базе WordPress</h2>
+  <p class="muted">Пароль от БД сохраняется в настройках сайта (таблица settings) в открытом виде — используйте доступ только на защищённом сервере.</p>
+  <form method="post" action="{{ url_for('admin_import_settings') }}" class="import-form">
+    <div class="import-grid">
+      <label>Хост <input type="text" name="wp_host" value="{{ cfg.wp_host }}" placeholder="localhost"></label>
+      <label>Порт <input type="text" name="wp_port" value="{{ cfg.wp_port }}" placeholder="3306"></label>
+      <label>База данных <input type="text" name="wp_db" value="{{ cfg.wp_db }}"></label>
+      <label>Пользователь <input type="text" name="wp_user" value="{{ cfg.wp_user }}"></label>
+      <label>Пароль <input type="password" name="wp_pass" value="{{ cfg.wp_pass }}"></label>
+      <label>Префикс таблиц <input type="text" name="wp_prefix" value="{{ cfg.wp_prefix }}" placeholder="wp_"></label>
+      <label>URL сайта <input type="text" name="wp_site_url" value="{{ cfg.wp_site_url }}" placeholder="https://uc.foresltd.com"></label>
+      <label>Пароль по умолчанию для сотрудников <input type="text" name="wp_default_password" value="{{ cfg.wp_default_password }}"></label>
+    </div>
+    <button class="btn btn-primary" type="submit">Сохранить настройки</button>
+  </form>
+  <button class="btn btn-outline" id="check-btn" style="margin-top:10px">Проверить подключение</button>
+  <pre class="update-output" id="check-output" style="display:none"></pre>
+</div>
+
+<div class="panel">
+  <h2>2. Импорт</h2>
+  <p class="muted">Порядок: сначала пользователи, затем тесты (категории + вопросы), затем результаты, затем документы.</p>
+  <div class="import-actions">
+    <button class="btn btn-primary" data-action="{{ url_for('admin_import_users') }}">Пользователи</button>
+    <button class="btn btn-primary" data-action="{{ url_for('admin_import_quizzes') }}">Тесты и вопросы</button>
+    <button class="btn btn-primary" data-action="{{ url_for('admin_import_results') }}">Результаты</button>
+  </div>
+  <div class="import-docs" style="margin-top:12px">
+    <form id="docs-form">
+      <label>Категория для нормативных документов (PDF)
+        <select name="category_id" required>
+          <option value="">— выберите категорию —</option>
+          {% for c in categories %}
+          <option value="{{ c.id }}">{{ c.title }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button class="btn btn-primary" type="submit" data-action="{{ url_for('admin_import_documents') }}">Импортировать документы</button>
+    </form>
+  </div>
+  <pre class="update-output" id="import-output" style="display:none"></pre>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const out = document.getElementById('import-output');
+  const checkOut = document.getElementById('check-output');
+
+  function show(el, text) {
+    el.style.display = 'block';
+    el.textContent = text;
+  }
+
+  document.getElementById('check-btn').addEventListener('click', function () {
+    show(checkOut, 'Проверка…');
+    fetch('{{ url_for("admin_import_check") }}', { method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'} })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.ok) {
+          show(checkOut, 'Подключено. MySQL: ' + d.version + '\n\nТаблицы:\n' + d.tables.join('\n'));
+        } else {
+          show(checkOut, 'Ошибка: ' + d.error);
+        }
+      })
+      .catch(function (e) { show(checkOut, 'Ошибка: ' + e); });
+  });
+
+  function runAction(url, button) {
+    show(out, 'Выполняется…');
+    button.disabled = true;
+    fetch(url, { method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'} })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        button.disabled = false;
+        show(out, d.ok ? (d.message || 'Готово') : ('Ошибка: ' + (d.error || 'неизвестно')));
+      })
+      .catch(function (e) { button.disabled = false; show(out, 'Ошибка: ' + e); });
+  }
+
+  document.querySelectorAll('[data-action]').forEach(function (btn) {
+    if (btn.type === 'submit') return; // кнопки форм обрабатываются отдельно
+    btn.addEventListener('click', function () { runAction(btn.dataset.action, btn); });
+  });
+
+  document.getElementById('docs-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const btn = this.querySelector('button[type=submit]');
+    const form = new FormData(this);
+    const url = btn.dataset.action;
+    show(out, 'Выполняется…');
+    btn.disabled = true;
+    fetch(url, { method: 'POST', body: form, headers: {'X-Requested-With': 'XMLHttpRequest'} })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        btn.disabled = false;
+        show(out, d.ok ? (d.message || 'Готово') : ('Ошибка: ' + (d.error || 'неизвестно')));
+      })
+      .catch(function (e) { btn.disabled = false; show(out, 'Ошибка: ' + e); });
+  });
+})();
+</script>
+{% endblock %}

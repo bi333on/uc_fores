@@ -17,6 +17,7 @@ class Employee(UserMixin, db.Model):
     employee_id = db.Column(db.String(64), unique=True, nullable=False, index=True)
     full_name = db.Column(db.String(255), nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
+    must_change_password = db.Column(db.Boolean, default=False)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=_now)
     last_login = db.Column(db.DateTime, nullable=True)
@@ -80,6 +81,7 @@ class Test(db.Model):
     attempts_limit = db.Column(db.Integer, nullable=True)
     shuffle_questions = db.Column(db.Boolean, default=True)
     is_active = db.Column(db.Boolean, default=True)
+    external_quiz_id = db.Column(db.Integer, nullable=True)
     created_at = db.Column(db.DateTime, default=_now)
 
     questions = db.relationship("Question", backref="test", order_by="Question.sort_order")

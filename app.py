@@ -338,6 +338,14 @@ def dt_filter(value, fmt="%d.%m.%Y %H:%M"):
     return value.strftime(fmt)
 
 
+@app.before_request
+def force_password_change():
+    if current_user.is_authenticated and getattr(current_user, "must_change_password", False):
+        ep = request.endpoint
+        if ep not in ("change_password", "logout", "static") and not request.path.startswith("/static/"):
+            return redirect(url_for("change_password"))
+
+
 # ---------------------------------------------------------------- public
 
 @app.route("/")
@@ -363,6 +371,8 @@ def login():
             login_user(employee)
             employee.last_login = datetime.now(timezone.utc)
             db.session.commit()
+            if employee.must_change_password:
+                return redirect(url_for("change_password"))
             nxt = request.args.get("next")
             if nxt and nxt.startswith("/"):
                 return redirect(nxt)
@@ -377,6 +387,26 @@ def logout():
     logout_user()
     flash("Вы вышли из личного кабинета.", "info")
     return redirect(url_for("index"))
+
+
+@app.route("/password/change/", methods=["GET", "POST"])
+@login_required
+def change_password():
+    error = None
+    if request.method == "POST":
+        p1 = request.form.get("password") or ""
+        p2 = request.form.get("password2") or ""
+        if len(p1) < 6:
+            error = "Пароль должен быть не короче 6 символов"
+        elif p1 != p2:
+            error = "Пароли не совпадают"
+        else:
+            current_user.password_hash = generate_password_hash(p1)
+            current_user.must_change_password = False
+            db.session.commit()
+            flash("Пароль изменён.", "success")
+            return redirect(url_for("index"))
+    return render_template("password_change.html", error=error)
 
 
 @app.route("/uploads/<path:filename>")
@@ -1248,6 +1278,95 @@ def admin_result_print(attempt_id):
         org_name=org_name,
         signature=signature,
     )
+
+
+# ---------------------------------------------------------------- admin: WP import
+
+@app.route("/admin/import/")
+@admin_required
+def admin_import():
+    import wp_import
+
+    cfg = wp_import.get_wp_settings()
+    categories = Category.query.order_by(Category.sort_order, Category.id).all()
+    return render_template("admin/import.html", cfg=cfg, categories=categories)
+
+
+@app.route("/admin/import/settings/", methods=["POST"])
+@admin_required
+def admin_import_settings():
+    import wp_import
+
+    data = {k: request.form.get(k) or "" for k in wp_import.WP_SETTING_KEYS}
+    wp_import.save_wp_settings(data)
+    flash("Настройки подключения к WordPress сохранены.", "success")
+    return redirect(url_for("admin_import"))
+
+
+def _run_import(func, *args):
+    try:
+        msg = func(*args)
+        return jsonify({"ok": True, "message": msg})
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"ok": False, "error": str(exc)})
+
+
+@app.route("/admin/import/check/", methods=["POST"])
+@admin_required
+def admin_import_check():
+    import wp_import
+
+    try:
+        cfg = wp_import.get_wp_settings()
+        conn = wp_import.wp_connect(cfg)
+        with conn.cursor() as cur:
+            cur.execute("SHOW TABLES")
+            tables = sorted(list(r.values())[0] for r in cur.fetchall())
+            cur.execute("SELECT VERSION()")
+            version = list(cur.fetchone().values())[0]
+        conn.close()
+        return jsonify({"ok": True, "version": version, "tables": tables})
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"ok": False, "error": str(exc)})
+
+
+@app.route("/admin/import/users/", methods=["POST"])
+@admin_required
+def admin_import_users():
+    import wp_import
+
+    cfg = wp_import.get_wp_settings()
+    return _run_import(wp_import.import_users, cfg)
+
+
+@app.route("/admin/import/quizzes/", methods=["POST"])
+@admin_required
+def admin_import_quizzes():
+    import wp_import
+
+    cfg = wp_import.get_wp_settings()
+    return _run_import(wp_import.import_quizzes, cfg)
+
+
+@app.route("/admin/import/results/", methods=["POST"])
+@admin_required
+def admin_import_results():
+    import wp_import
+
+    cfg = wp_import.get_wp_settings()
+    return _run_import(wp_import.import_results, cfg)
+
+
+@app.route("/admin/import/documents/", methods=["POST"])
+@admin_required
+def admin_import_documents():
+    import wp_import
+
+    cfg = wp_import.get_wp_settings()
+    category_id = request.form.get("category_id", type=int)
+    if not category_id:
+        return jsonify({"ok": False, "error": "Выберите категорию для документов"})
+    return _run_import(wp_import.import_documents, cfg, category_id)
 
 
 # ---------------------------------------------------------------- admin: settings

@@ -176,3 +176,9 @@ label.checkbox input { width: auto; }
   body { background: #fff; }
   .print-page { border: none; }
 }
+
+/* wp import */
+.import-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px 12px; }
+.import-grid label { margin: 0; }
+.import-grid input { margin-top: 2px; }
+.import-actions { display: flex; gap: 10px; flex-wrap: wrap; }
