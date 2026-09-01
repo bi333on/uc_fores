@@ -1369,6 +1369,29 @@ def admin_import_documents():
     return _run_import(wp_import.import_documents, cfg, category_id)
 
 
+@app.route("/admin/import/dump/", methods=["POST"])
+@admin_required
+def admin_import_dump():
+    import wp_import
+
+    upload = request.files.get("dump")
+    if not upload or not upload.filename:
+        return jsonify({"ok": False, "error": "Файл дампа не выбран"})
+    cfg = wp_import.get_wp_settings()
+    category_id = request.form.get("category_id", type=int)
+    flags = {
+        "users": request.form.get("users") == "on",
+        "quizzes": request.form.get("quizzes") == "on",
+        "results": request.form.get("results") == "on",
+        "documents": request.form.get("documents") == "on",
+    }
+    try:
+        msg = wp_import.import_dump(upload.read(), cfg, category_id, flags)
+        return jsonify({"ok": True, "message": msg})
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"ok": False, "error": str(exc)})
+
+
 # ---------------------------------------------------------------- admin: settings
 
 @app.route("/admin/settings/", methods=["GET", "POST"])

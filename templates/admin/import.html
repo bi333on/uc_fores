@@ -46,6 +46,35 @@
   </div>
   <pre class="update-output" id="import-output" style="display:none"></pre>
 </div>
+
+<div class="panel">
+  <h2>3. Импорт из SQL-дампа (phpMyAdmin) — без доступа к MySQL</h2>
+  <p class="muted">
+    В phpMyAdmin: Экспорт → формат SQL → скачать файл. Затем загрузите .sql-файл ниже — парсер
+    прочитает его локально. Максимальный размер файла задаётся <code>MAX_UPLOAD_MB</code> (по умолчанию 32 МБ).
+  </p>
+  <form id="dump-form" enctype="multipart/form-data">
+    <label>Файл дампа (.sql)
+      <input type="file" name="dump" accept=".sql" required>
+    </label>
+    <div class="dump-checks">
+      <label class="checkbox"><input type="checkbox" name="users" checked> Пользователи</label>
+      <label class="checkbox"><input type="checkbox" name="quizzes" checked> Тесты и вопросы</label>
+      <label class="checkbox"><input type="checkbox" name="results" checked> Результаты</label>
+      <label class="checkbox"><input type="checkbox" name="documents" checked> Документы</label>
+    </div>
+    <label>Категория для документов (PDF)
+      <select name="category_id">
+        <option value="">— выберите категорию —</option>
+        {% for c in categories %}
+        <option value="{{ c.id }}">{{ c.title }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button class="btn btn-primary" type="submit">Импортировать из дампа</button>
+  </form>
+  <pre class="update-output" id="dump-output" style="display:none"></pre>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -104,6 +133,26 @@
         show(out, d.ok ? (d.message || 'Готово') : ('Ошибка: ' + (d.error || 'неизвестно')));
       })
       .catch(function (e) { btn.disabled = false; show(out, 'Ошибка: ' + e); });
+  });
+
+  document.getElementById('dump-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const btn = this.querySelector('button[type=submit]');
+    const dumpOut = document.getElementById('dump-output');
+    dumpOut.style.display = 'block';
+    dumpOut.textContent = 'Выполняется (может занять время)…';
+    btn.disabled = true;
+    fetch('{{ url_for("admin_import_dump") }}', {
+      method: 'POST',
+      body: new FormData(this),
+      headers: {'X-Requested-With': 'XMLHttpRequest'}
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        btn.disabled = false;
+        dumpOut.textContent = d.ok ? (d.message || 'Готово') : ('Ошибка: ' + (d.error || 'неизвестно'));
+      })
+      .catch(function (e) { btn.disabled = false; dumpOut.textContent = 'Ошибка: ' + e; });
   });
 })();
 </script>

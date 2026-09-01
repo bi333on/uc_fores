@@ -182,3 +182,5 @@ label.checkbox input { width: auto; }
 .import-grid label { margin: 0; }
 .import-grid input { margin-top: 2px; }
 .import-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.dump-checks { display: flex; gap: 16px; flex-wrap: wrap; margin: 8px 0; }
+.dump-checks label.checkbox { margin: 0; }
