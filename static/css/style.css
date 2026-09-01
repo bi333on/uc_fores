@@ -162,3 +162,17 @@ label.checkbox input { width: auto; }
 .option-row input[type=text] { flex: 1; margin-top: 0; }
 .option-row input[type=checkbox] { width: auto; }
 .opt-img { max-width: 80px; max-height: 50px; border-radius: 4px; }
+
+/* print protocol */
+.print-page { max-width: 700px; margin: 20px auto; background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 32px; }
+.print-title { text-align: center; font-size: 1.5rem; font-weight: 700; margin: 0 0 4px; }
+.print-org { text-align: center; color: var(--muted); margin-bottom: 20px; }
+.print-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed var(--border); }
+.print-row span:first-child { color: var(--muted); }
+.print-result { margin: 24px 0; text-align: center; font-size: 1.2rem; font-weight: 600; }
+.print-signature { margin-top: 60px; display: flex; justify-content: space-between; }
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; }
+  .print-page { border: none; }
+}

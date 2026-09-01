@@ -1236,6 +1236,20 @@ def admin_results_export():
     )
 
 
+@app.route("/admin/results/<int:attempt_id>/print/")
+@admin_required
+def admin_result_print(attempt_id):
+    attempt = Attempt.query.get_or_404(attempt_id)
+    org_name = get_setting("cert_org_name", get_setting("site_name", config.SITE_NAME))
+    signature = get_setting("cert_signature", "")
+    return render_template(
+        "admin/result_print.html",
+        attempt=attempt,
+        org_name=org_name,
+        signature=signature,
+    )
+
+
 # ---------------------------------------------------------------- admin: settings
 
 @app.route("/admin/settings/", methods=["GET", "POST"])

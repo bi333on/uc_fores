@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Протокол результата</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=1">
+</head>
+<body>
+<div class="container">
+  <div class="no-print" style="margin: 16px 0;">
+    <button class="btn btn-primary" onclick="window.print()">Печать</button>
+    <a class="btn btn-outline" href="{{ url_for('admin_results') }}">← Назад</a>
+  </div>
+
+  <div class="print-page">
+    <div class="print-org">{{ org_name }}</div>
+    <div class="print-title">Протокол результата тестирования</div>
+
+    <div class="print-row"><span>Сотрудник</span><span>{{ attempt.employee.full_name }}</span></div>
+    <div class="print-row"><span>Табельный номер</span><span>{{ attempt.employee.employee_id }}</span></div>
+    <div class="print-row"><span>Курс</span><span>{{ attempt.test.category.title }}</span></div>
+    <div class="print-row"><span>Тест</span><span>{{ attempt.test.title }}</span></div>
+    <div class="print-row"><span>Тип тестирования</span><span>{{ 'Итоговое' if attempt.test.test_type == 'final' else 'Предварительное' }}</span></div>
+    <div class="print-row"><span>Дата прохождения</span><span>{{ attempt.finished_at|dt }}</span></div>
+    <div class="print-row"><span>Результат</span><span>{{ attempt.score }} из {{ attempt.total }} ({{ attempt.percent|round(1) }}%)</span></div>
+    <div class="print-row"><span>Статус</span><span>{{ 'Пройден' if attempt.passed else 'Не пройден' }}</span></div>
+
+    <div class="print-result {% if attempt.passed %}result-passed{% else %}result-failed{% endif %}">
+      {{ 'Тест пройден ✓' if attempt.passed else 'Тест не пройден ✗' }}
+    </div>
+
+    <div class="print-signature">
+      <div>Руководитель: ____________________</div>
+      <div>{% if signature %}{{ signature }}{% endif %}</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

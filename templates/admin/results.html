@@ -30,7 +30,7 @@
 
 {% if attempts %}
 <table class="table">
-  <thead><tr><th>Сотрудник</th><th>Тест</th><th>Тип</th><th>Балл</th><th>%</th><th>Пройден</th><th>Дата</th></tr></thead>
+  <thead><tr><th>Сотрудник</th><th>Тест</th><th>Тип</th><th>Балл</th><th>%</th><th>Пройден</th><th>Дата</th><th></th></tr></thead>
   <tbody>
     {% for a in attempts %}
     <tr>
@@ -41,6 +41,9 @@
       <td>{{ a.percent|round(1) }}</td>
       <td>{% if a.passed %}<span class="badge-ok">да</span>{% else %}<span class="badge-fail">нет</span>{% endif %}</td>
       <td>{{ a.finished_at|dt }}</td>
+      <td class="row-actions">
+        <a class="btn btn-sm btn-outline" href="{{ url_for('admin_result_print', attempt_id=a.id) }}" target="_blank">Печать</a>
+      </td>
     </tr>
     {% endfor %}
   </tbody>
