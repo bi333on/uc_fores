@@ -16,7 +16,7 @@ class Config:
     SITE_NAME: str = os.getenv("SITE_NAME", "Учебный центр")
     SITE_URL: str = os.getenv("SITE_URL", "https://uc-fores.example.com")
     DEFAULT_PASS_SCORE: int = int(os.getenv("DEFAULT_PASS_SCORE", "80"))
-    MAX_UPLOAD_MB: int = int(os.getenv("MAX_UPLOAD_MB", "32"))
+    MAX_UPLOAD_MB: int = int(os.getenv("MAX_UPLOAD_MB", "128"))
     EMPLOYEE_DEFAULT_PASSWORD: str = os.getenv("EMPLOYEE_DEFAULT_PASSWORD", "123456")
     UPDATE_BRANCH: str = os.getenv("UPDATE_BRANCH", "main")
     UPDATE_RESTART_CMD: str = os.getenv("UPDATE_RESTART_CMD", "")

@@ -1418,5 +1418,19 @@ def not_found(e):
     return render_template("404.html"), 404
 
 
+@app.errorhandler(413)
+def too_large(e):
+    if request.path.startswith("/admin/"):
+        return jsonify({"ok": False, "error": "Файл слишком большой. Увеличьте MAX_UPLOAD_MB в .env и перезапустите сервер"}), 413
+    return "Файл слишком большой", 413
+
+
+@app.errorhandler(500)
+def server_error(e):
+    if request.path.startswith("/admin/"):
+        return jsonify({"ok": False, "error": "Внутренняя ошибка сервера"}), 500
+    return "Внутренняя ошибка сервера", 500
+
+
 if __name__ == "__main__":
     app.run(debug=False, host="127.0.0.1", port=5000)

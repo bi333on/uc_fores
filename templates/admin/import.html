@@ -88,10 +88,21 @@
     el.textContent = text;
   }
 
+  function parseJson(r) {
+    const ct = r.headers.get('content-type') || '';
+    if (ct.indexOf('application/json') !== -1) return r.json();
+    return r.text().then(function (t) {
+      const hint = t.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160);
+      if (r.status === 413) throw new Error('Файл слишком большой (HTTP 413). Увеличьте MAX_UPLOAD_MB в .env и перезапустите сервер.');
+      if (r.status === 401 || r.status === 403) throw new Error('Сессия истекла — перелогиньтесь в админку.');
+      throw new Error('Сервер вернул не JSON (HTTP ' + r.status + '): ' + (hint || t.slice(0, 120)));
+    });
+  }
+
   document.getElementById('check-btn').addEventListener('click', function () {
     show(checkOut, 'Проверка…');
     fetch('{{ url_for("admin_import_check") }}', { method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'} })
-      .then(function (r) { return r.json(); })
+      .then(parseJson)
       .then(function (d) {
         if (d.ok) {
           show(checkOut, 'Подключено. MySQL: ' + d.version + '\n\nТаблицы:\n' + d.tables.join('\n'));
@@ -99,19 +110,19 @@
           show(checkOut, 'Ошибка: ' + d.error);
         }
       })
-      .catch(function (e) { show(checkOut, 'Ошибка: ' + e); });
+      .catch(function (e) { show(checkOut, 'Ошибка: ' + e.message); });
   });
 
   function runAction(url, button) {
     show(out, 'Выполняется…');
     button.disabled = true;
     fetch(url, { method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'} })
-      .then(function (r) { return r.json(); })
+      .then(parseJson)
       .then(function (d) {
         button.disabled = false;
         show(out, d.ok ? (d.message || 'Готово') : ('Ошибка: ' + (d.error || 'неизвестно')));
       })
-      .catch(function (e) { button.disabled = false; show(out, 'Ошибка: ' + e); });
+      .catch(function (e) { button.disabled = false; show(out, 'Ошибка: ' + e.message); });
   }
 
   document.querySelectorAll('[data-action]').forEach(function (btn) {
@@ -127,12 +138,12 @@
     show(out, 'Выполняется…');
     btn.disabled = true;
     fetch(url, { method: 'POST', body: form, headers: {'X-Requested-With': 'XMLHttpRequest'} })
-      .then(function (r) { return r.json(); })
+      .then(parseJson)
       .then(function (d) {
         btn.disabled = false;
         show(out, d.ok ? (d.message || 'Готово') : ('Ошибка: ' + (d.error || 'неизвестно')));
       })
-      .catch(function (e) { btn.disabled = false; show(out, 'Ошибка: ' + e); });
+      .catch(function (e) { btn.disabled = false; show(out, 'Ошибка: ' + e.message); });
   });
 
   document.getElementById('dump-form').addEventListener('submit', function (e) {
@@ -147,12 +158,12 @@
       body: new FormData(this),
       headers: {'X-Requested-With': 'XMLHttpRequest'}
     })
-      .then(function (r) { return r.json(); })
+      .then(parseJson)
       .then(function (d) {
         btn.disabled = false;
         dumpOut.textContent = d.ok ? (d.message || 'Готово') : ('Ошибка: ' + (d.error || 'неизвестно'));
       })
-      .catch(function (e) { btn.disabled = false; dumpOut.textContent = 'Ошибка: ' + e; });
+      .catch(function (e) { btn.disabled = false; dumpOut.textContent = 'Ошибка: ' + e.message; });
   });
 })();
 </script>
