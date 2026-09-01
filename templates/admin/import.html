@@ -50,12 +50,13 @@
 <div class="panel">
   <h2>3. Импорт из SQL-дампа (phpMyAdmin) — без доступа к MySQL</h2>
   <p class="muted">
-    В phpMyAdmin: Экспорт → формат SQL → скачать файл. Затем загрузите .sql-файл ниже — парсер
-    прочитает его локально. Максимальный размер файла задаётся <code>MAX_UPLOAD_MB</code> (по умолчанию 32 МБ).
+    В phpMyAdmin: Экспорт → формат SQL → (рекомендуется сжатие <b>gzip</b>) → скачать файл. Затем загрузите
+    <code>.sql</code> или <code>.sql.gz</code> ниже — парсер прочитает его локально. Максимальный размер задаётся
+    <code>MAX_UPLOAD_MB</code> (по умолчанию 512 МБ).
   </p>
   <form id="dump-form" enctype="multipart/form-data">
-    <label>Файл дампа (.sql)
-      <input type="file" name="dump" accept=".sql" required>
+    <label>Файл дампа (.sql или .sql.gz)
+      <input type="file" name="dump" accept=".sql,.gz" required>
     </label>
     <div class="dump-checks">
       <label class="checkbox"><input type="checkbox" name="users" checked> Пользователи</label>

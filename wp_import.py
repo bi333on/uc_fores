@@ -179,11 +179,11 @@ def _parse_question(row):
     return {"text": text, "type": qtype, "answers": answers, "correct": correct}
 
 
-def _create_test_and_questions(quiz_id, quiz_name, qrows):
-    """Создаёт категорию, тест и вопросы для одного теста QSM.
-    Возвращает (создан ли тест, кол-во созданных вопросов)."""
-    if Test.query.filter_by(external_quiz_id=quiz_id).first():
-        return 0, 0
+def _ensure_test(quiz_id, quiz_name):
+    """Создаёт категорию и тест при необходимости. Возвращает (тест, создан ли)."""
+    existing = Test.query.filter_by(external_quiz_id=quiz_id).first()
+    if existing:
+        return existing, False
     cat_title = _clean_quiz_name(quiz_name)
     slug = re.sub(r"[^a-z0-9\-_]+", "-", cat_title.lower()).strip("-") or "course"
     category = Category.query.filter_by(title=cat_title).first()
@@ -202,33 +202,33 @@ def _create_test_and_questions(quiz_id, quiz_name, qrows):
     )
     db.session.add(test)
     db.session.flush()
+    return test, True
 
-    created_q = 0
-    order = 0
-    for qrow in qrows:
-        qdata = _parse_question(qrow)
-        if not qdata:
-            continue
-        order += 1
-        q = Question(
-            test_id=test.id,
-            text=qdata["text"],
-            question_type=qdata["type"],
-            sort_order=order,
-        )
-        db.session.add(q)
-        db.session.flush()
-        for i, ans in enumerate(qdata["answers"]):
-            db.session.add(
-                AnswerOption(
-                    question_id=q.id,
-                    text=ans,
-                    is_correct=ans in qdata["correct"],
-                    sort_order=i + 1,
-                )
+
+def _add_question(test, qrow):
+    """Добавляет вопрос и варианты к тесту. Возвращает кол-во созданных вопросов (0/1)."""
+    qdata = _parse_question(qrow)
+    if not qdata:
+        return 0
+    order = Question.query.filter_by(test_id=test.id).count() + 1
+    q = Question(
+        test_id=test.id,
+        text=qdata["text"],
+        question_type=qdata["type"],
+        sort_order=order,
+    )
+    db.session.add(q)
+    db.session.flush()
+    for i, ans in enumerate(qdata["answers"]):
+        db.session.add(
+            AnswerOption(
+                question_id=q.id,
+                text=ans,
+                is_correct=ans in qdata["correct"],
+                sort_order=i + 1,
             )
-        created_q += 1
-    return 1, created_q
+        )
+    return 1
 
 
 def _import_result_row(r, user_map, imported_ids):
@@ -370,30 +370,34 @@ def import_quizzes(cfg):
     finally:
         conn.close()
 
-    q_by_quiz = {}
-    for q in all_questions:
-        try:
-            quiz_id = int(q.get("quiz_id") or 0)
-        except Exception:
-            continue
-        q_by_quiz.setdefault(quiz_id, []).append(q)
-
-    created_quizzes = created_questions = skipped_quizzes = 0
+    new_quiz_ids = set()
+    skipped_quizzes = 0
     for qz in quizzes:
         quiz_id = int(qz.get("quiz_id") or 0)
         quiz_name = (qz.get("quiz_name") or "").strip()
         if not quiz_name:
             continue
-        made, qcount = _create_test_and_questions(quiz_id, quiz_name, q_by_quiz.get(quiz_id, []))
-        if not made:
-            skipped_quizzes += 1
+        test, created = _ensure_test(quiz_id, quiz_name)
+        if created:
+            new_quiz_ids.add(quiz_id)
         else:
-            created_quizzes += 1
-        created_questions += qcount
+            skipped_quizzes += 1
+
+    created_questions = 0
+    for q in all_questions:
+        try:
+            quiz_id = int(q.get("quiz_id") or 0)
+        except Exception:
+            continue
+        if quiz_id not in new_quiz_ids:
+            continue
+        test = Test.query.filter_by(external_quiz_id=quiz_id).first()
+        if test:
+            created_questions += _add_question(test, q)
 
     db.session.commit()
     return (
-        f"Тестов: {created_quizzes}, пропущено: {skipped_quizzes}, "
+        f"Тестов: {len(new_quiz_ids)}, пропущено: {skipped_quizzes}, "
         f"вопросов импортировано: {created_questions}"
     )
 
@@ -611,11 +615,12 @@ def _find_stmt_end(text, start):
 
 def _iter_inserts(text):
     pos = 0
+    pattern = re.compile(r"INSERT\s+(?:IGNORE\s+)?INTO", re.IGNORECASE)
     while True:
-        m = re.search(r"INSERT\s+(?:IGNORE\s+)?INTO", text[pos:], re.IGNORECASE)
+        m = pattern.search(text, pos)
         if not m:
             break
-        start = pos + m.start()
+        start = m.start()
         end = _find_stmt_end(text, start)
         yield text[start:end]
         pos = end + 1
@@ -677,6 +682,21 @@ def _find_table(tables, suffix, prefix):
     return []
 
 
+def _iter_table_rows(text, table_suffix):
+    """Потоковый генератор строк таблицы, имя которой оканчивается на table_suffix."""
+    for stmt in _iter_inserts(text):
+        table, cols, rows = _parse_insert(stmt)
+        if not table or not cols:
+            continue
+        if not table.lower().endswith(table_suffix):
+            continue
+        for row in rows:
+            values = _split_top_level(row)
+            if len(values) != len(cols):
+                continue
+            yield dict(zip(cols, [_parse_value(v) for v in values]))
+
+
 def import_dump_users(users_rows, default_password):
     created = skipped = 0
     for r in users_rows:
@@ -701,9 +721,32 @@ def import_dump_users(users_rows, default_password):
     return f"Пользователей создано: {created}, пропущено: {skipped}"
 
 
-def import_dump_quizzes(quizzes_rows, questions_rows):
-    q_by_quiz = {}
-    for q in questions_rows:
+def _import_quizzes_stream(text):
+    """Потоковый импорт тестов и вопросов из текста дампа. Возвращает (тестов, пропущено, вопросов)."""
+    new_quiz_ids = set()
+    skipped = 0
+    for qz in _iter_table_rows(text, "mlw_quizzes"):
+        try:
+            if int(qz.get("deleted") or 0):
+                continue
+        except Exception:
+            pass
+        try:
+            quiz_id = int(qz.get("quiz_id") or 0)
+        except Exception:
+            continue
+        quiz_name = str(qz.get("quiz_name") or "").strip()
+        if not quiz_name:
+            continue
+        test, created = _ensure_test(quiz_id, quiz_name)
+        if created:
+            new_quiz_ids.add(quiz_id)
+        else:
+            skipped += 1
+    db.session.commit()
+
+    created_questions = 0
+    for q in _iter_table_rows(text, "mlw_questions"):
         try:
             if int(q.get("deleted") or 0):
                 continue
@@ -713,9 +756,19 @@ def import_dump_quizzes(quizzes_rows, questions_rows):
             quiz_id = int(q.get("quiz_id") or 0)
         except Exception:
             continue
-        q_by_quiz.setdefault(quiz_id, []).append(q)
+        if quiz_id not in new_quiz_ids:
+            continue
+        test = Test.query.filter_by(external_quiz_id=quiz_id).first()
+        if test:
+            created_questions += _add_question(test, q)
+    db.session.commit()
+    return len(new_quiz_ids), skipped, created_questions
 
-    created_quizzes = created_questions = skipped_quizzes = 0
+
+def import_dump_quizzes(quizzes_rows, questions_rows):
+    """Совместимый вариант (для внешних вызовов с готовыми списками строк)."""
+    new_quiz_ids = set()
+    skipped = 0
     for qz in quizzes_rows:
         try:
             if int(qz.get("deleted") or 0):
@@ -729,15 +782,32 @@ def import_dump_quizzes(quizzes_rows, questions_rows):
         quiz_name = str(qz.get("quiz_name") or "").strip()
         if not quiz_name:
             continue
-        made, qcount = _create_test_and_questions(quiz_id, quiz_name, q_by_quiz.get(quiz_id, []))
-        if not made:
-            skipped_quizzes += 1
+        test, created = _ensure_test(quiz_id, quiz_name)
+        if created:
+            new_quiz_ids.add(quiz_id)
         else:
-            created_quizzes += 1
-        created_questions += qcount
+            skipped += 1
+    db.session.commit()
+
+    created_questions = 0
+    for q in questions_rows:
+        try:
+            if int(q.get("deleted") or 0):
+                continue
+        except Exception:
+            pass
+        try:
+            quiz_id = int(q.get("quiz_id") or 0)
+        except Exception:
+            continue
+        if quiz_id not in new_quiz_ids:
+            continue
+        test = Test.query.filter_by(external_quiz_id=quiz_id).first()
+        if test:
+            created_questions += _add_question(test, q)
     db.session.commit()
     return (
-        f"Тестов: {created_quizzes}, пропущено: {skipped_quizzes}, "
+        f"Тестов: {len(new_quiz_ids)}, пропущено: {skipped}, "
         f"вопросов импортировано: {created_questions}"
     )
 
@@ -753,6 +823,11 @@ def import_dump_results(results_rows, users_rows):
     imported_ids = _get_imported_ids("wp_imported_results")
     counts = {"created": 0, "skipped": 0, "no_employee": 0, "no_test": 0}
     for r in results_rows:
+        try:
+            if int(r.get("deleted") or 0):
+                continue
+        except Exception:
+            pass
         code = _import_result_row(r, user_map, imported_ids)
         if code in counts:
             counts[code] += 1
@@ -832,24 +907,20 @@ def import_dump(file_bytes, cfg, category_id, flags):
     if text is None:
         return "Не удалось прочитать файл (неизвестная кодировка)"
 
-    tables = parse_dump(text)
-    prefix = cfg["wp_prefix"]
     parts = []
     if flags.get("users"):
-        parts.append(import_dump_users(_find_table(tables, "users", prefix), cfg["wp_default_password"]))
+        parts.append(import_dump_users(_iter_table_rows(text, "users"), cfg["wp_default_password"]))
     if flags.get("quizzes"):
-        parts.append(import_dump_quizzes(
-            _find_table(tables, "mlw_quizzes", prefix),
-            _find_table(tables, "mlw_questions", prefix),
-        ))
+        created_qz, skipped_qz, created_q = _import_quizzes_stream(text)
+        parts.append(f"Тестов: {created_qz}, пропущено: {skipped_qz}, вопросов импортировано: {created_q}")
     if flags.get("results"):
         parts.append(import_dump_results(
-            _find_table(tables, "mlw_results", prefix),
-            _find_table(tables, "users", prefix),
+            _iter_table_rows(text, "mlw_results"),
+            _iter_table_rows(text, "users"),
         ))
     if flags.get("documents"):
         if not category_id:
             parts.append("Документы: категория не выбрана")
         else:
-            parts.append(import_dump_documents(_find_table(tables, "posts", prefix), category_id))
+            parts.append(import_dump_documents(_iter_table_rows(text, "posts"), category_id))
     return "; ".join(p for p in parts if p) or "В дампе не найдено подходящих таблиц"

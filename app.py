@@ -1386,7 +1386,13 @@ def admin_import_dump():
         "documents": request.form.get("documents") == "on",
     }
     try:
-        msg = wp_import.import_dump(upload.read(), cfg, category_id, flags)
+        data = upload.read()
+        fname = (upload.filename or "").lower()
+        if fname.endswith(".gz"):
+            import gzip
+
+            data = gzip.decompress(data)
+        msg = wp_import.import_dump(data, cfg, category_id, flags)
         return jsonify({"ok": True, "message": msg})
     except Exception as exc:  # noqa: BLE001
         return jsonify({"ok": False, "error": str(exc)})
