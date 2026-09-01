@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Результат — {{ site_name }}{% endblock %}
+{% block content %}
+<a class="back-link" href="{{ url_for('category_page', slug=test.category.slug) }}">← К курсу</a>
+<h1>Результат теста: {{ test.title }}</h1>
+
+<div class="result-card {% if attempt.passed %}result-passed{% else %}result-failed{% endif %}">
+  <div class="result-score">{{ attempt.score }} / {{ attempt.total }}</div>
+  <div class="result-percent">{{ attempt.percent|round(1) }}%</div>
+  <div class="result-status">
+    {% if attempt.passed %}
+      Тест пройден ✓
+    {% else %}
+      Тест не пройден — необходимо {{ test.passing_score }}%
+    {% endif %}
+  </div>
+</div>
+
+{% if attempt.passed and test.test_type == 'final' %}
+  <div class="block">
+    <a class="btn btn-success btn-lg" href="{{ url_for('certificate', attempt_id=attempt.id) }}">Скачать сертификат (PDF)</a>
+  </div>
+{% endif %}
+
+{% if attempt.passed and test.test_type == 'preliminary' %}
+  {% set final = test.category.tests | selectattr('test_type', 'equalto', 'final') | selectattr('is_active') | first %}
+  <div class="notice">
+    Предварительное тестирование пройдено — вам доступно итоговое тестирование.
+    {% if final %}<a class="btn btn-primary" href="{{ url_for('take_test', test_id=final.id) }}">Пройти итоговый тест</a>{% endif %}
+  </div>
+{% endif %}
+
+{% if details %}
+<section class="block">
+  <h2>Разбор ответов</h2>
+  {% for d in details %}
+    {% set q = questions_map.get(d.question_id) %}
+  <div class="review {% if d.ok %}review-ok{% else %}review-bad{% endif %}">
+    <div class="review-head">{{ loop.index }}. {{ q.text if q else '—' }}</div>
+    {% if q %}
+      <ul class="review-options">
+        {% for o in q.options %}
+          {% set is_correct = o.id in d.correct %}
+          {% set is_picked_wrong = o.id in d.selected and not is_correct %}
+          <li class="{% if is_correct %}correct{% endif %}{% if is_picked_wrong %}wrong{% endif %}">
+            {{ o.text }}
+            {% if is_correct %} ✓{% endif %}
+            {% if is_picked_wrong %} ✗ (ваш выбор){% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+{% endblock %}

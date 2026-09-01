@@ -1,0 +1,19 @@
+{% extends "admin/base.html" %}
+{% block title %}Сотрудник{% endblock %}
+{% block content %}
+<h1>{{ 'Редактировать' if employee else 'Новый' }} сотрудник</h1>
+<form method="post">
+  <label>Табельный номер
+    <input type="text" name="employee_id" value="{{ employee.employee_id if employee else '' }}" required>
+  </label>
+  <label>ФИО
+    <input type="text" name="full_name" value="{{ employee.full_name if employee else '' }}" required>
+  </label>
+  <label>Пароль {% if employee %}(оставьте пустым, чтобы не менять){% endif %}
+    <input type="password" name="password" {% if not employee %}required{% endif %}>
+  </label>
+  <label class="checkbox"><input type="checkbox" name="is_active" {% if not employee or employee.is_active %}checked{% endif %}> Активен</label>
+  <button class="btn btn-primary" type="submit">Сохранить</button>
+  <a class="btn btn-outline" href="{{ url_for('admin_employees') }}">Отмена</a>
+</form>
+{% endblock %}

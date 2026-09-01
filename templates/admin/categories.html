@@ -1,0 +1,32 @@
+{% extends "admin/base.html" %}
+{% block title %}Категории{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Категории тестов</h1>
+  <a class="btn btn-primary" href="{{ url_for('admin_category_new') }}">Добавить категорию</a>
+</div>
+
+{% if categories %}
+<table class="table">
+  <thead><tr><th>Название</th><th>Slug</th><th>Порядок</th><th>Активна</th><th></th></tr></thead>
+  <tbody>
+    {% for c in categories %}
+    <tr>
+      <td>{{ c.title }}</td>
+      <td>{{ c.slug }}</td>
+      <td>{{ c.sort_order }}</td>
+      <td>{% if c.is_active %}✓{% else %}✗{% endif %}</td>
+      <td class="row-actions">
+        <a class="btn btn-sm btn-outline" href="{{ url_for('admin_category_edit', category_id=c.id) }}">Редактировать</a>
+        <form method="post" action="{{ url_for('admin_category_delete', category_id=c.id) }}" onsubmit="return confirm('Удалить категорию и всё содержимое?');" style="display:inline">
+          <button class="btn btn-sm btn-danger" type="submit">Удалить</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">Категорий нет. <a href="{{ url_for('admin_category_new') }}">Добавить</a></div>
+{% endif %}
+{% endblock %}

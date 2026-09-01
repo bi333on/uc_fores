@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}{{ category.title }} — {{ site_name }}{% endblock %}
+{% block content %}
+<a class="back-link" href="{{ url_for('index') }}">← На главную</a>
+<h1>{{ category.title }}</h1>
+{% if category.description %}<p>{{ category.description }}</p>{% endif %}
+
+{% if not current_user.is_authenticated %}
+  <div class="notice">
+    Для доступа к материалам и тестированию
+    <a href="{{ url_for('login', next=url_for('category_page', slug=category.slug)) }}">войдите в личный кабинет</a>.
+  </div>
+{% else %}
+  <section class="block">
+    <h2>Обучающие материалы</h2>
+    {% if materials %}
+      <ul class="materials">
+        {% for m in materials %}
+        <li class="material" data-material-id="{{ m.id }}">
+          <div>
+            <strong>{{ m.title }}</strong>
+            {% if m.description %}<div class="muted">{{ m.description }}</div>{% endif %}
+            {% if m.content %}<div class="material-text">{{ m.content }}</div>{% endif %}
+          </div>
+          <div class="material-actions">
+            {% if m.file_path %}
+              <a class="btn btn-outline btn-sm" href="{{ url_for('material_file', material_id=m.id) }}">Скачать PDF</a>
+            {% endif %}
+            <button class="btn btn-sm {% if m.id in read_ids %}btn-success{% else %}btn-primary{% endif %} read-btn"
+                    data-material-id="{{ m.id }}"
+                    {% if m.id in read_ids %}disabled{% endif %}>
+              {% if m.id in read_ids %}Изучено ✓{% else %}Отметить изученным{% endif %}
+            </button>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="empty">Материалы не добавлены.</div>
+    {% endif %}
+  </section>
+
+  <section class="block">
+    <h2>Тестирование</h2>
+    <div class="tests">
+      {% for t in tests %}
+        {% set s = statuses.get(t.id) %}
+        {% set is_final = t.test_type == 'final' %}
+        {% set locked = is_final and not pred_passed %}
+        <div class="test-row">
+          <div>
+            <strong>{{ t.title }}</strong>
+            <div class="muted">
+              {% if is_final %}Итоговое тестирование{% else %}Предварительное тестирование{% endif %}
+              · проходной балл {{ t.passing_score }}%
+              {% if t.attempts_limit %} · попыток: {{ t.attempts_limit }}{% endif %}
+            </div>
+            {% if s and s.best %}
+              <div class="muted">Лучший результат: {{ s.best.percent|round(1) }}%
+                {% if s.best.passed %}<span class="badge-ok">пройден</span>{% else %}<span class="badge-fail">не пройден</span>{% endif %}
+              </div>
+            {% endif %}
+          </div>
+          <div class="test-actions">
+            {% if locked %}
+              <span class="badge-fail">Доступно после предварительного теста</span>
+            {% else %}
+              <a class="btn btn-primary" href="{{ url_for('take_test', test_id=t.id) }}">
+                {{ 'Пройти итоговый тест' if is_final else 'Пройти предварительный тест' }}
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      {% else %}
+        <div class="empty">Тесты не добавлены.</div>
+      {% endfor %}
+    </div>
+  </section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.read-btn').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    const id = btn.dataset.materialId;
+    fetch('/api/material/' + id + '/read/', { method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'} })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.ok) {
+          btn.textContent = 'Изучено ✓';
+          btn.classList.remove('btn-primary');
+          btn.classList.add('btn-success');
+          btn.disabled = true;
+          const allRead = document.querySelectorAll('.read-btn:not([disabled])').length === 0;
+          if (allRead) { location.reload(); }
+        }
+      });
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "admin/base.html" %}
+{% block title %}Результаты{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Журнал результатов</h1>
+  <a class="btn btn-outline" href="{{ url_for('admin_results_export') }}">Экспорт CSV</a>
+</div>
+
+<form method="get" class="search-row">
+  <select name="category_id">
+    <option value="">Все категории</option>
+    {% for c in categories %}
+    <option value="{{ c.id }}" {% if filters.category_id == c.id %}selected{% endif %}>{{ c.title }}</option>
+    {% endfor %}
+  </select>
+  <select name="test_id">
+    <option value="">Все тесты</option>
+    {% for t in tests %}
+    <option value="{{ t.id }}" {% if filters.test_id == t.id %}selected{% endif %}>{{ t.title }}</option>
+    {% endfor %}
+  </select>
+  <select name="employee_id">
+    <option value="">Все сотрудники</option>
+    {% for e in employees %}
+    <option value="{{ e.id }}" {% if filters.employee_id == e.id %}selected{% endif %}>{{ e.full_name }} ({{ e.employee_id }})</option>
+    {% endfor %}
+  </select>
+  <button class="btn btn-outline" type="submit">Фильтр</button>
+</form>
+
+{% if attempts %}
+<table class="table">
+  <thead><tr><th>Сотрудник</th><th>Тест</th><th>Тип</th><th>Балл</th><th>%</th><th>Пройден</th><th>Дата</th></tr></thead>
+  <tbody>
+    {% for a in attempts %}
+    <tr>
+      <td>{{ a.employee.full_name }}<br><small>{{ a.employee.employee_id }}</small></td>
+      <td>{{ a.test.title }}</td>
+      <td>{{ 'Предварительный' if a.test.test_type == 'preliminary' else 'Итоговый' }}</td>
+      <td>{{ a.score }}/{{ a.total }}</td>
+      <td>{{ a.percent|round(1) }}</td>
+      <td>{% if a.passed %}<span class="badge-ok">да</span>{% else %}<span class="badge-fail">нет</span>{% endif %}</td>
+      <td>{{ a.finished_at|dt }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">Результатов нет.</div>
+{% endif %}
+{% endblock %}

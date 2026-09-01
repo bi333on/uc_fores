@@ -1,0 +1,34 @@
+{% extends "admin/base.html" %}
+{% block title %}Тесты{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Тесты</h1>
+  <a class="btn btn-primary" href="{{ url_for('admin_test_new') }}">Добавить тест</a>
+</div>
+
+{% if tests %}
+<table class="table">
+  <thead><tr><th>Название</th><th>Категория</th><th>Тип</th><th>Балл</th><th>Вопросов</th><th></th></tr></thead>
+  <tbody>
+    {% for t in tests %}
+    <tr>
+      <td>{{ t.title }}</td>
+      <td>{{ t.category.title if t.category else '—' }}</td>
+      <td>{{ 'Предварительный' if t.test_type == 'preliminary' else 'Итоговый' }}</td>
+      <td>{{ t.passing_score }}%</td>
+      <td>{{ t.questions|length }}</td>
+      <td class="row-actions">
+        <a class="btn btn-sm btn-primary" href="{{ url_for('admin_test_editor', test_id=t.id) }}">Конструктор</a>
+        <a class="btn btn-sm btn-outline" href="{{ url_for('admin_test_edit', test_id=t.id) }}">Настройки</a>
+        <form method="post" action="{{ url_for('admin_test_delete', test_id=t.id) }}" onsubmit="return confirm('Удалить тест и его вопросы?');" style="display:inline">
+          <button class="btn btn-sm btn-danger" type="submit">Удалить</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">Тестов нет.</div>
+{% endif %}
+{% endblock %}

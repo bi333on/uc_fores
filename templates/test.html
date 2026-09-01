@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}{{ test.title }} — {{ site_name }}{% endblock %}
+{% block content %}
+<h1>{{ test.title }}</h1>
+<p class="muted">
+  {% if test.test_type == 'final' %}Итоговое{% else %}Предварительное{% endif %} тестирование
+  · {{ questions|length }} вопрос(ов) · проходной балл {{ test.passing_score }}%
+</p>
+{% if test.time_limit_minutes %}
+<div class="timer" id="timer" data-minutes="{{ test.time_limit_minutes }}">Осталось: {{ test.time_limit_minutes }}:00</div>
+{% endif %}
+
+<form id="test-form" data-attempt="{{ attempt.id }}">
+  {% for q in questions %}
+  <div class="question" data-question-id="{{ q.id }}">
+    <h3><span class="q-num">{{ loop.index }}</span>. {{ q.text }}</h3>
+    {% if q.image_path %}
+      <img class="q-image" src="{{ url_for('uploaded_file', filename=q.image_path) }}" alt="Вопрос">
+    {% endif %}
+    <div class="options">
+      {% for o in q.options %}
+      <label class="option">
+        <input type="{{ 'checkbox' if q.question_type == 'multiple' else 'radio' }}"
+               name="q{{ q.id }}" value="{{ o.id }}">
+        <span>{{ o.text }}</span>
+        {% if o.image_path %}
+          <img class="o-image" src="{{ url_for('uploaded_file', filename=o.image_path) }}" alt="Вариант">
+        {% endif %}
+      </label>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+  <button class="btn btn-primary btn-lg" type="submit">Завершить тест</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const form = document.getElementById('test-form');
+  const timerEl = document.getElementById('timer');
+  let secondsLeft = null;
+  let timerId = null;
+
+  if (timerEl) {
+    secondsLeft = parseInt(timerEl.dataset.minutes, 10) * 60;
+    timerId = setInterval(function () {
+      secondsLeft -= 1;
+      const m = Math.floor(secondsLeft / 60);
+      const s = String(secondsLeft % 60).padStart(2, '0');
+      timerEl.textContent = 'Осталось: ' + m + ':' + s;
+      if (secondsLeft <= 0) {
+        clearInterval(timerId);
+        submitTest();
+      }
+    }, 1000);
+  }
+
+  function collectAnswers() {
+    const answers = {};
+    document.querySelectorAll('.question').forEach(function (qEl) {
+      const qid = qEl.dataset.questionId;
+      const checked = qEl.querySelectorAll('input:checked');
+      answers[qid] = Array.from(checked).map(function (i) { return i.value; });
+    });
+    return answers;
+  }
+
+  function submitTest() {
+    if (timerId) clearInterval(timerId);
+    fetch('{{ url_for("submit_test", test_id=test.id) }}', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+      body: JSON.stringify({ answers: collectAnswers() })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.ok && d.redirect) { window.location.href = d.redirect; }
+        else { alert(d.error || 'Ошибка'); }
+      })
+      .catch(function () { alert('Ошибка сети'); });
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    submitTest();
+  });
+})();
+</script>
+{% endblock %}

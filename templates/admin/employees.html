@@ -1,0 +1,40 @@
+{% extends "admin/base.html" %}
+{% block title %}Сотрудники{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Сотрудники</h1>
+  <div>
+    <a class="btn btn-outline" href="{{ url_for('admin_employee_import') }}">Импорт CSV/Excel</a>
+    <a class="btn btn-primary" href="{{ url_for('admin_employee_new') }}">Добавить</a>
+  </div>
+</div>
+
+<form method="get" class="search-row">
+  <input type="text" name="q" value="{{ q }}" placeholder="Поиск по табельному номеру или ФИО">
+  <button class="btn btn-outline" type="submit">Найти</button>
+</form>
+
+{% if employees %}
+<table class="table">
+  <thead><tr><th>Табельный</th><th>ФИО</th><th>Активен</th><th>Вход</th><th></th></tr></thead>
+  <tbody>
+    {% for e in employees %}
+    <tr>
+      <td>{{ e.employee_id }}</td>
+      <td>{{ e.full_name }}</td>
+      <td>{% if e.is_active %}✓{% else %}✗{% endif %}</td>
+      <td>{{ e.last_login|dt if e.last_login else '—' }}</td>
+      <td class="row-actions">
+        <a class="btn btn-sm btn-outline" href="{{ url_for('admin_employee_edit', employee_id=e.id) }}">Редактировать</a>
+        <form method="post" action="{{ url_for('admin_employee_delete', employee_id=e.id) }}" onsubmit="return confirm('Удалить сотрудника и его результаты?');" style="display:inline">
+          <button class="btn btn-sm btn-danger" type="submit">Удалить</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">Сотрудников нет.</div>
+{% endif %}
+{% endblock %}

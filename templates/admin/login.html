@@ -1,0 +1,17 @@
+{% extends "admin/base.html" %}
+{% block title %}Вход администратора{% endblock %}
+{% block content %}
+<div class="auth-card admin-login">
+  <h1>Вход администратора</h1>
+  {% if error %}<div class="flash flash-danger">{{ error }}</div>{% endif %}
+  <form method="post" action="{{ url_for('admin_login') }}">
+    <label>Логин
+      <input type="text" name="username" required autofocus>
+    </label>
+    <label>Пароль
+      <input type="password" name="password" required>
+    </label>
+    <button class="btn btn-primary" type="submit">Войти</button>
+  </form>
+</div>
+{% endblock %}

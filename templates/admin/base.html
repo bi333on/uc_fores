@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Админка — {{ site_name }}{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=1">
+  {% block head_extra %}{% endblock %}
+</head>
+<body class="admin-body">
+<aside class="admin-sidebar">
+  <div class="admin-brand">UC-Fores</div>
+  <nav class="admin-nav">
+    <a href="{{ url_for('admin_dashboard') }}">Дашборд</a>
+    <a href="{{ url_for('admin_categories') }}">Категории</a>
+    <a href="{{ url_for('admin_materials') }}">Материалы</a>
+    <a href="{{ url_for('admin_tests') }}">Тесты</a>
+    <a href="{{ url_for('admin_employees') }}">Сотрудники</a>
+    <a href="{{ url_for('admin_results') }}">Результаты</a>
+    <a href="{{ url_for('admin_settings') }}">Настройки</a>
+    <a href="{{ url_for('admin_2fa_setup') }}">2FA</a>
+    <a href="{{ url_for('admin_logout') }}">Выйти</a>
+  </nav>
+</aside>
+<main class="admin-main">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-wrap">
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+{% block scripts %}{% endblock %}
+</body>
+</html>

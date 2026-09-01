@@ -1,0 +1,63 @@
+{% extends "admin/base.html" %}
+{% block title %}Конструктор: {{ test.title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Конструктор: {{ test.title }}</h1>
+  <a class="btn btn-outline" href="{{ url_for('admin_tests') }}">← К тестам</a>
+</div>
+
+<div id="editor" data-test-id="{{ test.id }}">
+  <div class="panel">
+    <h2>Добавить вопрос</h2>
+    <div class="editor-add">
+      <input type="text" id="new-question-text" placeholder="Текст вопроса">
+      <select id="new-question-type">
+        <option value="single">Один ответ</option>
+        <option value="multiple">Несколько ответов</option>
+      </select>
+      <button class="btn btn-primary" id="add-question-btn">Добавить</button>
+    </div>
+  </div>
+
+  <div id="questions">
+    {% for q in questions %}
+    <div class="panel question-editor" data-question-id="{{ q.id }}">
+      <div class="qe-head">
+        <select class="qe-type-select">
+          <option value="single" {% if q.question_type != 'multiple' %}selected{% endif %}>один ответ</option>
+          <option value="multiple" {% if q.question_type == 'multiple' %}selected{% endif %}>несколько ответов</option>
+        </select>
+        <input class="qe-text" type="text" value="{{ q.text }}">
+        <button class="btn btn-sm btn-danger qe-delete">Удалить</button>
+      </div>
+      {% if q.image_path %}
+      <div class="qe-image">
+        <img src="{{ url_for('uploaded_file', filename=q.image_path) }}">
+      </div>
+      {% endif %}
+      <div class="qe-image-upload">
+        <input type="file" class="qe-image-input" accept=".png,.jpg,.jpeg,.gif,.webp">
+      </div>
+      <div class="options">
+        {% for o in q.options %}
+        <div class="option-row" data-option-id="{{ o.id }}">
+          <input type="checkbox" class="opt-correct" {% if o.is_correct %}checked{% endif %} title="Правильный">
+          <input type="text" class="opt-text" value="{{ o.text }}">
+          {% if o.image_path %}<img class="opt-img" src="{{ url_for('uploaded_file', filename=o.image_path) }}">{% endif %}
+          <input type="file" class="opt-image-input" accept=".png,.jpg,.jpeg,.gif,.webp">
+          <button class="btn btn-sm btn-danger opt-delete">✕</button>
+        </div>
+        {% endfor %}
+      </div>
+      <button class="btn btn-sm btn-outline opt-add">+ Добавить вариант</button>
+      <button class="btn btn-sm btn-primary qe-save">Сохранить</button>
+    </div>
+    {% endfor %}
+  </div>
+  {% if not questions %}<div class="empty">Вопросов пока нет.</div>{% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/test_editor.js') }}?v=1"></script>
+{% endblock %}

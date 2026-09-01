@@ -1,0 +1,39 @@
+{% extends "admin/base.html" %}
+{% block title %}Тест{% endblock %}
+{% block content %}
+<h1>{{ 'Редактировать' if test else 'Новый' }} тест</h1>
+<form method="post">
+  <label>Название
+    <input type="text" name="title" value="{{ test.title if test else '' }}" required>
+  </label>
+  <label>Категория
+    <select name="category_id" required>
+      {% for c in categories %}
+      <option value="{{ c.id }}" {% if test and test.category_id == c.id %}selected{% endif %}>{{ c.title }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Тип
+    <select name="test_type">
+      <option value="preliminary" {% if not test or test.test_type == 'preliminary' %}selected{% endif %}>Предварительное тестирование</option>
+      <option value="final" {% if test and test.test_type == 'final' %}selected{% endif %}>Итоговое тестирование</option>
+    </select>
+  </label>
+  <label>Проходной балл, %
+    <input type="number" name="passing_score" min="1" max="100" value="{{ test.passing_score if test else 80 }}">
+  </label>
+  <label>Ограничение по времени, минут (пусто — без ограничения)
+    <input type="number" name="time_limit_minutes" min="1" value="{{ test.time_limit_minutes if test and test.time_limit_minutes else '' }}">
+  </label>
+  <label>Лимит попыток (пусто — без ограничения)
+    <input type="number" name="attempts_limit" min="1" value="{{ test.attempts_limit if test and test.attempts_limit else '' }}">
+  </label>
+  <label>Описание
+    <textarea name="description">{{ test.description if test else '' }}</textarea>
+  </label>
+  <label class="checkbox"><input type="checkbox" name="shuffle_questions" {% if not test or test.shuffle_questions %}checked{% endif %}> Перемешивать вопросы</label>
+  <label class="checkbox"><input type="checkbox" name="is_active" {% if not test or test.is_active %}checked{% endif %}> Активен</label>
+  <button class="btn btn-primary" type="submit">Сохранить</button>
+  <a class="btn btn-outline" href="{{ url_for('admin_tests') }}">Отмена</a>
+</form>
+{% endblock %}

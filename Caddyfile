@@ -1,0 +1,27 @@
+uc-fores.example.com {
+    encode gzip zstd
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+    reverse_proxy 127.0.0.1:8000 {
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+    handle_path /static/* {
+        root * /opt/uc-fores/static
+        file_server
+    }
+    handle_path /uploads/* {
+        root * /opt/uc-fores/uploads
+        file_server
+    }
+    log {
+        output file /var/log/caddy/uc-fores.log
+        format json
+    }
+}

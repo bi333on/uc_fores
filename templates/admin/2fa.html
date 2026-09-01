@@ -1,0 +1,14 @@
+{% extends "admin/base.html" %}
+{% block title %}Двухфакторная аутентификация{% endblock %}
+{% block content %}
+<div class="auth-card admin-login">
+  <h1>Введите код из приложения</h1>
+  {% if error %}<div class="flash flash-danger">{{ error }}</div>{% endif %}
+  <form method="post" action="{{ url_for('admin_2fa') }}">
+    <label>Код
+      <input type="text" name="code" required autofocus inputmode="numeric">
+    </label>
+    <button class="btn btn-primary" type="submit">Подтвердить</button>
+  </form>
+</div>
+{% endblock %}

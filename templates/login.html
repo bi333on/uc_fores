@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Вход — {{ site_name }}{% endblock %}
+{% block content %}
+<div class="auth-card">
+  <h1>Вход в личный кабинет</h1>
+  <p class="muted">Для прохождения обучения введите табельный номер и пароль.</p>
+  {% if error %}<div class="flash flash-danger">{{ error }}</div>{% endif %}
+  <form method="post" action="{{ url_for('login', next=request.args.get('next')) }}">
+    <label>Табельный номер
+      <input type="text" name="employee_id" required autofocus>
+    </label>
+    <label>Пароль
+      <input type="password" name="password" required>
+    </label>
+    <button class="btn btn-primary" type="submit">Войти</button>
+  </form>
+</div>
+{% endblock %}

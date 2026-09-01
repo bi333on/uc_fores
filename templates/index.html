@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Курсы — {{ site_name }}{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>Онлайн обучение и тестирование</h1>
+  <p>Выберите курс, изучите материалы и пройдите предварительное и итоговое тестирование.</p>
+</section>
+
+{% if categories %}
+<section class="grid">
+  {% for c in categories %}
+  <a class="card" href="{{ url_for('category_page', slug=c.slug) }}">
+    <h2>{{ c.title }}</h2>
+    {% if c.description %}<p>{{ c.description }}</p>{% endif %}
+    <span class="card-link">Перейти →</span>
+  </a>
+  {% endfor %}
+</section>
+{% else %}
+<div class="empty">Курсы пока не добавлены.</div>
+{% endif %}
+{% endblock %}

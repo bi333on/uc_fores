@@ -1,0 +1,65 @@
+{% extends "admin/base.html" %}
+{% block title %}Дашборд{% endblock %}
+{% block content %}
+<h1>Дашборд</h1>
+
+<div class="stats-grid">
+  <div class="stat"><div class="stat-num">{{ stats.categories }}</div><div>Категории</div></div>
+  <div class="stat"><div class="stat-num">{{ stats.materials }}</div><div>Материалы</div></div>
+  <div class="stat"><div class="stat-num">{{ stats.tests }}</div><div>Тесты</div></div>
+  <div class="stat"><div class="stat-num">{{ stats.employees }}</div><div>Сотрудники</div></div>
+  <div class="stat"><div class="stat-num">{{ stats.attempts }}</div><div>Пройдено</div></div>
+</div>
+
+<div class="panel">
+  <h2>Обновление из Git</h2>
+  <p class="muted">Ветка: <b>{{ git.branch }}</b> · коммит: <b>{{ git.commit }}</b></p>
+  <button class="btn btn-primary" id="update-btn">Обновить</button>
+  <pre class="update-output" id="update-output" style="display:none"></pre>
+</div>
+
+<h2>Последние результаты</h2>
+{% if recent %}
+<table class="table">
+  <thead><tr><th>Сотрудник</th><th>Тест</th><th>%</th><th>Пройден</th><th>Дата</th></tr></thead>
+  <tbody>
+    {% for a in recent %}
+    <tr>
+      <td>{{ a.employee.full_name }}</td>
+      <td>{{ a.test.title }}</td>
+      <td>{{ a.percent|round(1) }}</td>
+      <td>{% if a.passed %}✓{% else %}✗{% endif %}</td>
+      <td>{{ a.finished_at|dt }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">Пока нет результатов.</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('update-btn').addEventListener('click', function () {
+  const btn = this;
+  const out = document.getElementById('update-output');
+  btn.disabled = true;
+  btn.textContent = 'Обновление…';
+  out.style.display = 'block';
+  out.textContent = 'Выполняется…';
+  fetch('{{ url_for("admin_update") }}', { method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'} })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      out.textContent = d.output || 'Готово';
+      btn.disabled = false;
+      btn.textContent = 'Обновить';
+    })
+    .catch(function (e) {
+      out.textContent = 'Ошибка: ' + e;
+      btn.disabled = false;
+      btn.textContent = 'Обновить';
+    });
+});
+</script>
+{% endblock %}

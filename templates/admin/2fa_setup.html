@@ -1,0 +1,25 @@
+{% extends "admin/base.html" %}
+{% block title %}Двухфакторная аутентификация{% endblock %}
+{% block content %}
+<h1>Двухфакторная аутентификация</h1>
+
+<div class="panel">
+  <h2>Настройка 2FA (Google Authenticator)</h2>
+  <p>1. Отсканируйте QR-код или введите секрет вручную в приложении.</p>
+  <img src="data:image/png;base64,{{ qr }}" alt="QR">
+  <p>Секрет: <code>{{ secret }}</code></p>
+  <p>2. Введите код для подтверждения.</p>
+  <form method="post" action="{{ url_for('admin_2fa_setup') }}">
+    <input type="hidden" name="action" value="enable">
+    <label>Код
+      <input type="text" name="code" required inputmode="numeric">
+    </label>
+    <button class="btn btn-primary" type="submit">Включить 2FA</button>
+  </form>
+</div>
+
+<form method="post" action="{{ url_for('admin_2fa_setup') }}" onsubmit="return confirm('Отключить 2FA?');">
+  <input type="hidden" name="action" value="disable">
+  <button class="btn btn-danger" type="submit">Отключить 2FA</button>
+</form>
+{% endblock %}

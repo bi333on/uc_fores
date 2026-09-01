@@ -1,0 +1,22 @@
+{% extends "admin/base.html" %}
+{% block title %}Категория{% endblock %}
+{% block content %}
+<h1>{{ 'Редактировать' if category else 'Новая' }} категория</h1>
+<form method="post">
+  <label>Название
+    <input type="text" name="title" value="{{ category.title if category else '' }}" required>
+  </label>
+  <label>Slug (оставьте пустым для автогенерации)
+    <input type="text" name="slug" value="{{ category.slug if category else '' }}">
+  </label>
+  <label>Описание
+    <textarea name="description">{{ category.description if category else '' }}</textarea>
+  </label>
+  <label>Порядок
+    <input type="number" name="sort_order" value="{{ category.sort_order if category else 0 }}">
+  </label>
+  <label class="checkbox"><input type="checkbox" name="is_active" {% if not category or category.is_active %}checked{% endif %}> Активна</label>
+  <button class="btn btn-primary" type="submit">Сохранить</button>
+  <a class="btn btn-outline" href="{{ url_for('admin_categories') }}">Отмена</a>
+</form>
+{% endblock %}

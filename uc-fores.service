@@ -1,0 +1,16 @@
+[Unit]
+Description=UC Fores — учебный центр (Flask + Gunicorn)
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/uc-fores
+Environment="PATH=/opt/uc-fores/venv/bin:/usr/bin"
+EnvironmentFile=/opt/uc-fores/.env
+ExecStart=/opt/uc-fores/venv/bin/gunicorn --workers 3 --bind 127.0.0.1:8000 --timeout 120 app:app
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

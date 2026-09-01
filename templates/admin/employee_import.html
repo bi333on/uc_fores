@@ -1,0 +1,19 @@
+{% extends "admin/base.html" %}
+{% block title %}Импорт сотрудников{% endblock %}
+{% block content %}
+<h1>Импорт сотрудников</h1>
+<p class="muted">
+  Загрузите CSV или XLSX. Обязательные колонки: «табельный номер» и «ФИО».
+  Опционально: «пароль» (если нет — используется пароль по умолчанию из настроек).
+</p>
+{% if result %}
+<div class="flash flash-{{ result[0] }}">{{ result[1] }}</div>
+{% endif %}
+<form method="post" enctype="multipart/form-data">
+  <label>Файл
+    <input type="file" name="file" accept=".csv,.xlsx,.xls" required>
+  </label>
+  <button class="btn btn-primary" type="submit">Импортировать</button>
+  <a class="btn btn-outline" href="{{ url_for('admin_employees') }}">Назад</a>
+</form>
+{% endblock %}
