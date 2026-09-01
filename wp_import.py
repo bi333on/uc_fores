@@ -141,6 +141,17 @@ def _qtype(question_type_new, question_type):
     return None
 
 
+def _truthy(v):
+    if v is None:
+        return False
+    if isinstance(v, bool):
+        return v
+    if isinstance(v, (int, float)):
+        return v != 0
+    s = str(v).strip().lower()
+    return s not in ("", "0", "0.0", "false", "null", "none")
+
+
 def _parse_question(row):
     text = (row.get("question_name") or "").strip()
     if not text:
@@ -149,8 +160,28 @@ def _parse_question(row):
     if qtype is None:
         return None
 
-    answers = _to_list(php_unserialize(row.get("answer_array")))
-    answers = [str(a).strip() for a in answers if str(a).strip()]
+    raw = php_unserialize(row.get("answer_array"))
+    answers = []
+    correct = set()
+    if raw is not None:
+        items = _to_list(raw)
+        nested = bool(items) and isinstance(items[0], (list, dict))
+        if nested:
+            # Вложенный формат QSM: каждый ответ = [текст, правильный?, баллы]
+            for it in items:
+                parts = _to_list(it)
+                if not parts:
+                    continue
+                ans_text = str(parts[0]).strip()
+                if not ans_text:
+                    continue
+                answers.append(ans_text)
+                flag = parts[1] if len(parts) > 1 else 0
+                if _truthy(flag):
+                    correct.add(ans_text)
+        else:
+            answers = [str(a).strip() for a in items if str(a).strip()]
+
     if not answers:
         answers = []
         for i in range(1, 7):
@@ -160,8 +191,9 @@ def _parse_question(row):
     if not answers:
         return None
 
-    correct = _to_list(php_unserialize(row.get("question_answer_info")))
-    correct = {str(c).strip() for c in correct if str(c).strip()}
+    if not correct:
+        info = _to_list(php_unserialize(row.get("question_answer_info")))
+        correct = {str(c).strip() for c in info if str(c).strip()}
     if not correct:
         ca = row.get("correct_answer")
         if ca is not None and str(ca).strip() != "":
@@ -643,18 +675,61 @@ def _parse_value(v):
     return v
 
 
-def _parse_insert(stmt):
+def _parse_insert(stmt, schema=None):
     m = re.match(
         r"INSERT\s+(?:IGNORE\s+)?INTO\s+`?([A-Za-z0-9_]+)`?\s*\((?P<cols>.*?)\)\s*VALUES\s*(?P<vals>.*)",
         stmt,
         re.IGNORECASE | re.DOTALL,
     )
+    if m:
+        table = m.group(1)
+        cols = [c.strip().strip("`") for c in _split_top_level(m.group("cols"))]
+        rows = _extract_rows(m.group("vals"))
+        return table, cols, rows
+    # mysqldump: INSERT INTO `table` VALUES (...) — без списка колонок
+    m = re.match(
+        r"INSERT\s+(?:IGNORE\s+)?INTO\s+`?([A-Za-z0-9_]+)`?\s*VALUES\s*(?P<vals>.*)",
+        stmt,
+        re.IGNORECASE | re.DOTALL,
+    )
+    if m:
+        table = m.group(1)
+        cols = list((schema or {}).get(table.lower()) or [])
+        rows = _extract_rows(m.group("vals"))
+        return table, cols, rows
+    return None, [], []
+
+
+def _parse_create_table(stmt):
+    m = re.search(r"CREATE\s+TABLE\s+`?([A-Za-z0-9_]+)`?\s*\(", stmt, re.IGNORECASE)
     if not m:
-        return None, [], []
+        return None, []
     table = m.group(1)
-    cols = [c.strip().strip("`") for c in _split_top_level(m.group("cols"))]
-    rows = _extract_rows(m.group("vals"))
-    return table, cols, rows
+    cols = re.findall(r"(?m)^\s*`([^`]+)`\s", stmt)
+    return table, cols
+
+
+def _iter_create_tables(text):
+    pos = 0
+    pattern = re.compile(r"CREATE\s+TABLE\s+`?([A-Za-z0-9_]+)`?", re.IGNORECASE)
+    while True:
+        m = pattern.search(text, pos)
+        if not m:
+            break
+        start = m.start()
+        end = _find_stmt_end(text, start)
+        yield text[start:end]
+        pos = end + 1
+
+
+def _build_schema(text):
+    """Строит карту таблица -> список колонок из CREATE TABLE."""
+    schema = {}
+    for stmt in _iter_create_tables(text):
+        table, cols = _parse_create_table(stmt)
+        if table and cols:
+            schema[table.lower()] = cols
+    return schema
 
 
 def parse_dump(text):
@@ -682,10 +757,10 @@ def _find_table(tables, suffix, prefix):
     return []
 
 
-def _iter_table_rows(text, table_suffix):
+def _iter_table_rows(text, table_suffix, schema=None):
     """Потоковый генератор строк таблицы, имя которой оканчивается на table_suffix."""
     for stmt in _iter_inserts(text):
-        table, cols, rows = _parse_insert(stmt)
+        table, cols, rows = _parse_insert(stmt, schema)
         if not table or not cols:
             continue
         if not table.lower().endswith(table_suffix):
@@ -721,11 +796,11 @@ def import_dump_users(users_rows, default_password):
     return f"Пользователей создано: {created}, пропущено: {skipped}"
 
 
-def _import_quizzes_stream(text):
+def _import_quizzes_stream(text, schema=None):
     """Потоковый импорт тестов и вопросов из текста дампа. Возвращает (тестов, пропущено, вопросов)."""
     new_quiz_ids = set()
     skipped = 0
-    for qz in _iter_table_rows(text, "mlw_quizzes"):
+    for qz in _iter_table_rows(text, "mlw_quizzes", schema):
         try:
             if int(qz.get("deleted") or 0):
                 continue
@@ -746,7 +821,7 @@ def _import_quizzes_stream(text):
     db.session.commit()
 
     created_questions = 0
-    for q in _iter_table_rows(text, "mlw_questions"):
+    for q in _iter_table_rows(text, "mlw_questions", schema):
         try:
             if int(q.get("deleted") or 0):
                 continue
@@ -907,20 +982,21 @@ def import_dump(file_bytes, cfg, category_id, flags):
     if text is None:
         return "Не удалось прочитать файл (неизвестная кодировка)"
 
+    schema = _build_schema(text)
     parts = []
     if flags.get("users"):
-        parts.append(import_dump_users(_iter_table_rows(text, "users"), cfg["wp_default_password"]))
+        parts.append(import_dump_users(_iter_table_rows(text, "users", schema), cfg["wp_default_password"]))
     if flags.get("quizzes"):
-        created_qz, skipped_qz, created_q = _import_quizzes_stream(text)
+        created_qz, skipped_qz, created_q = _import_quizzes_stream(text, schema)
         parts.append(f"Тестов: {created_qz}, пропущено: {skipped_qz}, вопросов импортировано: {created_q}")
     if flags.get("results"):
         parts.append(import_dump_results(
-            _iter_table_rows(text, "mlw_results"),
-            _iter_table_rows(text, "users"),
+            _iter_table_rows(text, "mlw_results", schema),
+            _iter_table_rows(text, "users", schema),
         ))
     if flags.get("documents"):
         if not category_id:
             parts.append("Документы: категория не выбрана")
         else:
-            parts.append(import_dump_documents(_iter_table_rows(text, "posts"), category_id))
+            parts.append(import_dump_documents(_iter_table_rows(text, "posts", schema), category_id))
     return "; ".join(p for p in parts if p) or "В дампе не найдено подходящих таблиц"

@@ -10,3 +10,7 @@ instance/
 .idea/
 uploads/*
 !uploads/.gitkeep
+
+# дампы WordPress не коммитим
+*.sql
+*.sql.gz
