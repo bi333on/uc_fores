@@ -114,10 +114,12 @@ def _table_exists(cur, table):
 def _clean_quiz_name(name):
     n = re.sub(
         r"(?i)(онлайн\s+обучение\s+и\s+тестирование|предварительное\s+тестирование|"
-        r"итоговое\s+тестирование|предварительный\s+тест|итоговый\s+тест)",
+        r"итоговое\s+тестирование|предварительный\s+тест|итоговый\s+тест|"
+        r"предворительный\s+тест|предворительное\s+тестирование)",
         " ",
         name or "",
     )
+    n = re.sub(r"\([^)]*\)", " ", n)  # убрать скобки: "(Предворительный тест)"
     n = re.sub(r"\b20\d{2}\b", " ", n)
     n = re.sub(r"[—\-–:]+", " ", n)
     n = re.sub(r"\s+", " ", n).strip(" .-")
@@ -220,6 +222,11 @@ def _ensure_test(quiz_id, quiz_name):
     slug = re.sub(r"[^a-z0-9\-_]+", "-", cat_title.lower()).strip("-") or "course"
     category = Category.query.filter_by(title=cat_title).first()
     if not category:
+        base = slug
+        i = 2
+        while Category.query.filter_by(slug=slug).first():
+            slug = f"{base}-{i}"
+            i += 1
         category = Category(title=cat_title, slug=slug, is_active=True)
         db.session.add(category)
         db.session.flush()
