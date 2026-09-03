@@ -177,9 +177,13 @@ label.checkbox input { width: auto; }
 .qe-image img { max-width: 240px; max-height: 160px; margin: 8px 0; border-radius: 6px; }
 .qe-image-upload { margin: 6px 0; }
 .options { display: flex; flex-direction: column; gap: 6px; }
+.options-head { display: flex; align-items: baseline; gap: 8px; margin: 4px 0 2px; font-weight: 600; font-size: .9rem; }
 .option-row { display: flex; gap: 8px; align-items: center; }
 .option-row input[type=text] { flex: 1; margin-top: 0; }
 .option-row input[type=checkbox] { width: auto; }
+.opt-correct-wrap { display: inline-flex; align-items: center; gap: 6px; margin: 0; font-weight: 400; white-space: nowrap; cursor: pointer; }
+.opt-correct-wrap input { width: auto; }
+.opt-correct-wrap span { font-size: .82rem; color: var(--muted); }
 .opt-img { max-width: 80px; max-height: 50px; border-radius: 4px; }
 
 /* print protocol */

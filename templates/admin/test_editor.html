@@ -17,6 +17,7 @@
       </select>
       <button class="btn btn-primary" id="add-question-btn">Добавить</button>
     </div>
+    <div class="muted" style="margin-top:8px">После добавления вопроса нажмите «+ Добавить вариант» — появится строка для ввода варианта ответа. Галочкой отмечаются правильные варианты.</div>
   </div>
 
   <div id="questions">
@@ -39,12 +40,19 @@
         <input type="file" class="qe-image-input" accept=".png,.jpg,.jpeg,.gif,.webp">
       </div>
       <div class="options">
+        <div class="options-head">
+          <span>Варианты ответов</span>
+          <span class="muted">(отметьте галочкой правильные)</span>
+        </div>
         {% for o in q.options %}
         <div class="option-row" data-option-id="{{ o.id }}">
-          <input type="checkbox" class="opt-correct" {% if o.is_correct %}checked{% endif %} title="Правильный">
-          <input type="text" class="opt-text" value="{{ o.text }}">
+          <label class="opt-correct-wrap" title="Отметить как правильный">
+            <input type="checkbox" class="opt-correct" {% if o.is_correct %}checked{% endif %}>
+            <span>Правильный</span>
+          </label>
+          <input type="text" class="opt-text" value="{{ o.text }}" placeholder="Текст варианта ответа">
           {% if o.image_path %}<img class="opt-img" src="{{ url_for('uploaded_file', filename=o.image_path) }}">{% endif %}
-          <input type="file" class="opt-image-input" accept=".png,.jpg,.jpeg,.gif,.webp">
+          <input type="file" class="opt-image-input" accept=".png,.jpg,.jpeg,.gif,.webp" title="Картинка варианта">
           <button class="btn btn-sm btn-danger opt-delete">✕</button>
         </div>
         {% endfor %}
