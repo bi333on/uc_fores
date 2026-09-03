@@ -448,6 +448,20 @@ def category_page(slug):
     )
 
 
+@app.route("/category/<slug>/documents/")
+@login_required
+def category_documents(slug):
+    category = Category.query.filter_by(slug=slug, is_active=True).first_or_404()
+    materials = [m for m in category.materials if m.is_active]
+    read_ids = set(session.get("read_materials", []) or [])
+    return render_template(
+        "documents.html",
+        category=category,
+        materials=materials,
+        read_ids=read_ids,
+    )
+
+
 @app.route("/api/material/<int:material_id>/read/", methods=["POST"])
 @login_required
 def mark_material_read(material_id):
