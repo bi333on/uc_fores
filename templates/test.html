@@ -40,6 +40,7 @@
     </div>
     <button class="btn btn-outline" type="button" id="next-btn">Далее →</button>
   </div>
+  <div class="test-hint" id="hint" style="display:none">Выберите вариант ответа, чтобы продолжить.</div>
   <button class="btn btn-primary btn-lg" type="submit" id="finish-btn" style="display:none">Завершить тест</button>
 </form>
 {% endblock %}
@@ -49,6 +50,7 @@
 (function () {
   const form = document.getElementById('test-form');
   const timerEl = document.getElementById('timer');
+  const isFinal = {{ 'true' if test.test_type == 'final' else 'false' }};
   const perPage = Math.max(1, parseInt('{{ questions_per_page }}', 10) || 1);
   const questionEls = Array.from(document.querySelectorAll('.question'));
   const total = questionEls.length;
@@ -58,9 +60,22 @@
   const finishBtn = document.getElementById('finish-btn');
   const progressEl = document.getElementById('progress');
   const progressFill = document.getElementById('progress-fill');
+  const hintEl = document.getElementById('hint');
   let current = 0;
   let secondsLeft = null;
   let timerId = null;
+
+  function visibleQuestions() {
+    const start = current * perPage;
+    const end = Math.min(start + perPage, total);
+    return questionEls.slice(start, end);
+  }
+
+  function pageAnswered() {
+    return visibleQuestions().every(function (qEl) {
+      return qEl.querySelectorAll('input:checked').length > 0;
+    });
+  }
 
   function render() {
     const start = current * perPage;
@@ -75,13 +90,34 @@
     const isLast = current >= pages - 1;
     nextBtn.style.display = isLast ? 'none' : '';
     finishBtn.style.display = isLast ? '' : 'none';
+
+    if (isFinal) {
+      const answered = pageAnswered();
+      if (!isLast) {
+        nextBtn.disabled = !answered;
+      } else {
+        finishBtn.disabled = !answered;
+      }
+      hintEl.style.display = answered ? 'none' : '';
+    } else {
+      nextBtn.disabled = false;
+      finishBtn.disabled = false;
+      hintEl.style.display = 'none';
+    }
   }
 
   prevBtn.addEventListener('click', function () {
     if (current > 0) { current -= 1; render(); window.scrollTo(0, 0); }
   });
   nextBtn.addEventListener('click', function () {
+    if (isFinal && !pageAnswered()) return;
     if (current < pages - 1) { current += 1; render(); window.scrollTo(0, 0); }
+  });
+
+  form.addEventListener('change', function (e) {
+    if (e.target.matches('input[type=radio], input[type=checkbox]')) {
+      render();
+    }
   });
 
   if (timerEl) {
@@ -125,6 +161,10 @@
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
+    if (isFinal && !pageAnswered()) {
+      render();
+      return;
+    }
     if (!confirm('Завершить тест и отправить ответы?')) return;
     submitTest();
   });
