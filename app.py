@@ -926,6 +926,53 @@ def admin_test_delete(test_id):
     return redirect(url_for("admin_tests"))
 
 
+@app.route("/admin/tests/<int:test_id>/duplicate/", methods=["POST"])
+@admin_required
+def admin_test_duplicate(test_id):
+    src = Test.query.get_or_404(test_id)
+    dup = Test(
+        category_id=src.category_id,
+        title=f"{src.title} (копия)",
+        description=src.description,
+        test_type=src.test_type,
+        passing_score=src.passing_score,
+        time_limit_minutes=src.time_limit_minutes,
+        attempts_limit=src.attempts_limit,
+        questions_per_page=src.questions_per_page or 1,
+        questions_limit=src.questions_limit,
+        shuffle_questions=src.shuffle_questions,
+        is_active=False,
+    )
+    db.session.add(dup)
+    db.session.flush()  # получить dup.id
+
+    for q in src.questions:
+        new_q = Question(
+            test_id=dup.id,
+            text=q.text,
+            image_path=q.image_path,
+            question_type=q.question_type,
+            sort_order=q.sort_order,
+            is_active=q.is_active,
+        )
+        db.session.add(new_q)
+        db.session.flush()
+        for o in q.options:
+            db.session.add(
+                AnswerOption(
+                    question_id=new_q.id,
+                    text=o.text,
+                    image_path=o.image_path,
+                    is_correct=o.is_correct,
+                    sort_order=o.sort_order,
+                )
+            )
+
+    db.session.commit()
+    flash("Тест продублирован. Отредактируйте копию (тип, название, настройки).", "success")
+    return redirect(url_for("admin_tests"))
+
+
 @app.route("/admin/tests/<int:test_id>/editor/")
 @admin_required
 def admin_test_editor(test_id):
