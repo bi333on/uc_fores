@@ -10,10 +10,33 @@
     <input type="text" name="full_name" value="{{ employee.full_name if employee else '' }}" required>
   </label>
   <label>Пароль {% if employee %}(оставьте пустым, чтобы не менять){% endif %}
-    <input type="password" name="password" {% if not employee %}required{% endif %}>
+    <input type="text" name="password" id="password" {% if not employee %}required{% endif %} autocomplete="off">
   </label>
+  <button class="btn btn-outline btn-sm" type="button" id="gen-password">Сгенерировать пароль</button>
   <label class="checkbox"><input type="checkbox" name="is_active" {% if not employee or employee.is_active %}checked{% endif %}> Активен</label>
   <button class="btn btn-primary" type="submit">Сохранить</button>
   <a class="btn btn-outline" href="{{ url_for('admin_employees') }}">Отмена</a>
 </form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var input = document.getElementById('password');
+  var btn = document.getElementById('gen-password');
+  var chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  function generate() {
+    var s = '';
+    var arr = new Uint32Array(8);
+    crypto.getRandomValues(arr);
+    for (var i = 0; i < 8; i++) {
+      s += chars[arr[i] % chars.length];
+    }
+    return s;
+  }
+  btn.addEventListener('click', function () {
+    input.value = generate();
+  });
+})();
+</script>
 {% endblock %}
