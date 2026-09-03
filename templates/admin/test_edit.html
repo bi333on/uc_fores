@@ -39,7 +39,9 @@
   </label>
   <label class="checkbox"><input type="checkbox" name="shuffle_questions" {% if not test or test.shuffle_questions %}checked{% endif %}> Перемешивать вопросы</label>
   <label class="checkbox"><input type="checkbox" name="is_active" {% if not test or test.is_active %}checked{% endif %}> Активен</label>
-  <button class="btn btn-primary" type="submit">Сохранить</button>
-  <a class="btn btn-outline" href="{{ url_for('admin_tests') }}">Отмена</a>
+  <div class="form-actions">
+    <button class="btn btn-primary" type="submit">💾 Сохранить</button>
+    <a class="btn btn-outline" href="{{ url_for('admin_tests') }}">Отмена</a>
+  </div>
 </form>
 {% endblock %}

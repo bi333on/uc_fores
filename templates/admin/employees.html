@@ -15,14 +15,15 @@
 </form>
 
 {% if employees %}
+<div class="table-wrap">
 <table class="table">
   <thead><tr><th>Табельный</th><th>ФИО</th><th>Активен</th><th>Вход</th><th></th></tr></thead>
   <tbody>
     {% for e in employees %}
     <tr>
-      <td>{{ e.employee_id }}</td>
+      <td><code>{{ e.employee_id }}</code></td>
       <td>{{ e.full_name }}</td>
-      <td>{% if e.is_active %}✓{% else %}✗{% endif %}</td>
+      <td>{% if e.is_active %}<span class="chip chip-green">✓ да</span>{% else %}<span class="chip chip-gray">нет</span>{% endif %}</td>
       <td>{{ e.last_login|dt if e.last_login else '—' }}</td>
       <td class="row-actions">
         <a class="btn btn-sm btn-outline" href="{{ url_for('admin_employee_edit', employee_id=e.id) }}">Редактировать</a>
@@ -34,6 +35,7 @@
     {% endfor %}
   </tbody>
 </table>
+</div>
 {% else %}
 <div class="empty">Сотрудников нет.</div>
 {% endif %}

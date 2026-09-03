@@ -2,16 +2,33 @@
 {% block title %}Вход администратора{% endblock %}
 {% block content %}
 <div class="auth-card admin-login">
+  <div class="auth-logo">
+    <span class="logo-mark" style="width:46px;height:46px;font-size:1.3rem;">У</span>
+  </div>
   <h1>Вход администратора</h1>
+  <p class="muted">Панель управления учебным центром.</p>
   {% if error %}<div class="flash flash-danger">{{ error }}</div>{% endif %}
   <form method="post" action="{{ url_for('admin_login') }}">
     <label>Логин
-      <input type="text" name="username" required autofocus>
+      <input type="text" name="username" required autofocus autocomplete="username">
     </label>
     <label>Пароль
-      <input type="password" name="password" required>
+      <span class="pass-field">
+        <input type="password" name="password" id="password" required autocomplete="current-password">
+        <button type="button" class="pass-toggle" onclick="togglePass(this)">Показать</button>
+      </span>
     </label>
-    <button class="btn btn-primary" type="submit">Войти</button>
+    <button class="btn btn-primary btn-block" type="submit">Войти</button>
   </form>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function togglePass(btn) {
+  var i = btn.parentElement.querySelector('input');
+  i.type = i.type === 'password' ? 'text' : 'password';
+  btn.textContent = i.type === 'password' ? 'Показать' : 'Скрыть';
+}
+</script>
 {% endblock %}

@@ -3,12 +3,13 @@
 {% block content %}
 <div class="auth-card admin-login">
   <h1>Введите код из приложения</h1>
+  <p class="muted">Откройте Google Authenticator и введите 6-значный код.</p>
   {% if error %}<div class="flash flash-danger">{{ error }}</div>{% endif %}
   <form method="post" action="{{ url_for('admin_2fa') }}">
     <label>Код
-      <input type="text" name="code" required autofocus inputmode="numeric">
+      <input type="text" name="code" required autofocus inputmode="numeric" maxlength="6" placeholder="000000">
     </label>
-    <button class="btn btn-primary" type="submit">Подтвердить</button>
+    <button class="btn btn-primary btn-block" type="submit">Подтвердить</button>
   </form>
 </div>
 {% endblock %}

@@ -1,18 +1,36 @@
 {% extends "base.html" %}
 {% block title %}Вход — {{ site_name }}{% endblock %}
 {% block content %}
-<div class="auth-card">
-  <h1>Вход в личный кабинет</h1>
-  <p class="muted">Для прохождения обучения введите табельный номер и пароль.</p>
-  {% if error %}<div class="flash flash-danger">{{ error }}</div>{% endif %}
-  <form method="post" action="{{ url_for('login', next=request.args.get('next')) }}">
-    <label>Табельный номер
-      <input type="text" name="employee_id" required autofocus>
-    </label>
-    <label>Пароль
-      <input type="password" name="password" required>
-    </label>
-    <button class="btn btn-primary" type="submit">Войти</button>
-  </form>
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <span class="logo-mark" style="width:46px;height:46px;font-size:1.3rem;">У</span>
+    </div>
+    <h1>Вход в личный кабинет</h1>
+    <p class="muted">Для прохождения обучения введите табельный номер и пароль.</p>
+    {% if error %}<div class="flash flash-danger">{{ error }}</div>{% endif %}
+    <form method="post" action="{{ url_for('login', next=request.args.get('next')) }}">
+      <label>Табельный номер
+        <input type="text" name="employee_id" required autofocus autocomplete="username" placeholder="Например, 12345">
+      </label>
+      <label>Пароль
+        <span class="pass-field">
+          <input type="password" name="password" id="password" required autocomplete="current-password">
+          <button type="button" class="pass-toggle" onclick="togglePass(this)">Показать</button>
+        </span>
+      </label>
+      <button class="btn btn-primary btn-block" type="submit">Войти</button>
+    </form>
+  </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function togglePass(btn) {
+  var i = document.getElementById('password');
+  i.type = i.type === 'password' ? 'text' : 'password';
+  btn.textContent = i.type === 'password' ? 'Показать' : 'Скрыть';
+}
+</script>
 {% endblock %}

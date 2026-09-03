@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0f172a">
   <title>{% block title %}Админка — {{ site_name }}{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3">
   {% block head_extra %}{% endblock %}
 </head>
 <body class="admin-auth-body">
@@ -13,7 +14,10 @@
     {% if messages %}
       <div class="flash-wrap">
         {% for category, message in messages %}
-          <div class="flash flash-{{ category }}">{{ message }}</div>
+          <div class="flash flash-{{ category }}">
+            {{ message }}
+            <button type="button" class="flash-close" aria-label="Закрыть" onclick="this.parentElement.remove()">×</button>
+          </div>
         {% endfor %}
       </div>
     {% endif %}

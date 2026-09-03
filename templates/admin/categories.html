@@ -7,15 +7,16 @@
 </div>
 
 {% if categories %}
+<div class="table-wrap">
 <table class="table">
   <thead><tr><th>Название</th><th>Slug</th><th>Порядок</th><th>Активна</th><th></th></tr></thead>
   <tbody>
     {% for c in categories %}
     <tr>
       <td>{{ c.title }}</td>
-      <td>{{ c.slug }}</td>
+      <td><code>{{ c.slug }}</code></td>
       <td>{{ c.sort_order }}</td>
-      <td>{% if c.is_active %}✓{% else %}✗{% endif %}</td>
+      <td>{% if c.is_active %}<span class="chip chip-green">✓ да</span>{% else %}<span class="chip chip-gray">нет</span>{% endif %}</td>
       <td class="row-actions">
         <a class="btn btn-sm btn-outline" href="{{ url_for('admin_category_edit', category_id=c.id) }}">Редактировать</a>
         <form method="post" action="{{ url_for('admin_category_delete', category_id=c.id) }}" onsubmit="return confirm('Удалить категорию и всё содержимое?');" style="display:inline">
@@ -26,6 +27,7 @@
     {% endfor %}
   </tbody>
 </table>
+</div>
 {% else %}
 <div class="empty">Категорий нет. <a href="{{ url_for('admin_category_new') }}">Добавить</a></div>
 {% endif %}

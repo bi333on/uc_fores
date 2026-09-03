@@ -29,17 +29,18 @@
 </form>
 
 {% if attempts %}
+<div class="table-wrap">
 <table class="table">
   <thead><tr><th>Сотрудник</th><th>Тест</th><th>Тип</th><th>Балл</th><th>%</th><th>Пройден</th><th>Дата</th><th></th></tr></thead>
   <tbody>
     {% for a in attempts %}
     <tr>
-      <td>{{ a.employee.full_name }}<br><small>{{ a.employee.employee_id }}</small></td>
+      <td>{{ a.employee.full_name }}<br><small class="muted">{{ a.employee.employee_id }}</small></td>
       <td>{{ a.test.title }}</td>
-      <td>{{ 'Предварительный' if a.test.test_type == 'preliminary' else 'Итоговый' }}</td>
+      <td>{% if a.test.test_type == 'preliminary' %}<span class="chip chip-amber">Предварительный</span>{% else %}<span class="chip chip-blue">Итоговый</span>{% endif %}</td>
       <td>{{ a.score }}/{{ a.total }}</td>
-      <td>{{ a.percent|round(1) }}</td>
-      <td>{% if a.passed %}<span class="badge-ok">да</span>{% else %}<span class="badge-fail">нет</span>{% endif %}</td>
+      <td><b>{{ a.percent|round(1) }}</b></td>
+      <td>{% if a.passed %}<span class="chip chip-green">✓ да</span>{% else %}<span class="chip chip-red">✗ нет</span>{% endif %}</td>
       <td>{{ a.finished_at|dt }}</td>
       <td class="row-actions">
         <a class="btn btn-sm btn-outline" href="{{ url_for('admin_result_print', attempt_id=a.id) }}" target="_blank">Печать</a>
@@ -48,6 +49,7 @@
     {% endfor %}
   </tbody>
 </table>
+</div>
 {% else %}
 <div class="empty">Результатов нет.</div>
 {% endif %}

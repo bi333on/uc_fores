@@ -3,7 +3,7 @@
 {% block content %}
 <a class="back-link" href="{{ url_for('index') }}">← На главную</a>
 <h1>{{ category.title }}</h1>
-{% if category.description %}<p>{{ category.description }}</p>{% endif %}
+{% if category.description %}<p class="muted">{{ category.description }}</p>{% endif %}
 
 {% if not current_user.is_authenticated %}
   <div class="notice">
@@ -12,7 +12,11 @@
   </div>
 {% else %}
   <section class="block">
-    <a class="btn btn-primary btn-lg" href="{{ url_for('category_documents', slug=category.slug) }}">Открыть нормативные документы</a>
+    <a class="btn btn-primary btn-lg" href="{{ url_for('category_documents', slug=category.slug) }}">
+      📄 Открыть нормативные документы
+      {% if materials %}<span class="chip chip-blue" style="margin-left:6px">{{ materials|length }}</span>{% endif %}
+    </a>
+    {% if not materials %}<p class="muted small" style="margin-top:10px">Документы пока не добавлены.</p>{% endif %}
   </section>
 
   <section class="block">
@@ -23,25 +27,31 @@
         {% set is_final = t.test_type == 'final' %}
         {% set locked = is_final and not pred_passed %}
         {% set prelim_done = (not is_final) and s and s.best and s.best.passed %}
-        <div class="test-row">
-          <div>
+        <div class="test-row {{ 'is-locked' if locked }}">
+          <div style="min-width:0">
             <strong>{{ t.title }}</strong>
-            <div class="muted">
-              {% if is_final %}Итоговое тестирование{% else %}Предварительное тестирование{% endif %}
-              · проходной балл {{ t.passing_score }}%
-              {% if t.attempts_limit %} · попыток: {{ t.attempts_limit }}{% endif %}
+            <div class="test-meta">
+              {% if is_final %}
+                <span class="chip chip-blue">Итоговый тест</span>
+              {% else %}
+                <span class="chip chip-amber">Предварительный тест</span>
+              {% endif %}
+              <span class="chip chip-gray">Проходной балл {{ t.passing_score }}%</span>
+              {% if t.attempts_limit %}<span class="chip chip-gray">Попыток: {{ t.attempts_limit }}</span>{% endif %}
+              {% if s and s.attempts %}<span class="chip chip-gray">Пройдено попыток: {{ s.attempts }}</span>{% endif %}
             </div>
             {% if s and s.best %}
-              <div class="muted">Лучший результат: {{ s.best.percent|round(1) }}%
-                {% if s.best.passed %}<span class="badge-ok">пройден</span>{% else %}<span class="badge-fail">не пройден</span>{% endif %}
+              <div class="muted" style="margin-top:8px">
+                Лучший результат: <b>{{ s.best.percent|round(1) }}%</b>
+                {% if s.best.passed %}<span class="badge-ok">· пройден ✓</span>{% else %}<span class="badge-fail">· не пройден</span>{% endif %}
               </div>
             {% endif %}
           </div>
           <div class="test-actions">
             {% if locked %}
-              <span class="badge-fail">Доступно после предварительного теста</span>
+              <span class="chip chip-red">🔒 Сначала пройдите предварительный тест</span>
             {% elif prelim_done %}
-              <button class="btn btn-primary" disabled>Предварительный тест пройден ✓</button>
+              <button class="btn btn-success" disabled>✓ Пройден</button>
             {% else %}
               <a class="btn btn-primary" href="{{ url_for('take_test', test_id=t.id) }}">
                 {{ 'Пройти итоговый тест' if is_final else 'Пройти предварительный тест' }}

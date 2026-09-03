@@ -14,8 +14,10 @@
   </label>
   <button class="btn btn-outline btn-sm" type="button" id="gen-password">Сгенерировать пароль</button>
   <label class="checkbox"><input type="checkbox" name="is_active" {% if not employee or employee.is_active %}checked{% endif %}> Активен</label>
-  <button class="btn btn-primary" type="submit">Сохранить</button>
-  <a class="btn btn-outline" href="{{ url_for('admin_employees') }}">Отмена</a>
+  <div class="form-actions">
+    <button class="btn btn-primary" type="submit">💾 Сохранить</button>
+    <a class="btn btn-outline" href="{{ url_for('admin_employees') }}">Отмена</a>
+  </div>
 </form>
 {% endblock %}
 

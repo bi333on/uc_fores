@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% block title %}{{ category.title }} — Нормативные документы — {{ site_name }}{% endblock %}
 {% block content %}
-<a class="back-link" href="{{ url_for('category_page', slug=category.slug) }}">← Назад</a>
+<a class="back-link" href="{{ url_for('category_page', slug=category.slug) }}">← Назад к курсу</a>
 <h1>Нормативные документы</h1>
-<p class="muted">{{ category.title }}</p>
+<p class="muted">{{ category.title }} · {{ materials|length }} документ(ов)</p>
 
 {% if materials %}
   <div class="doc-grid">

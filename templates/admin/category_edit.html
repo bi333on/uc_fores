@@ -16,7 +16,9 @@
     <input type="number" name="sort_order" value="{{ category.sort_order if category else 0 }}">
   </label>
   <label class="checkbox"><input type="checkbox" name="is_active" {% if not category or category.is_active %}checked{% endif %}> Активна</label>
-  <button class="btn btn-primary" type="submit">Сохранить</button>
-  <a class="btn btn-outline" href="{{ url_for('admin_categories') }}">Отмена</a>
+  <div class="form-actions">
+    <button class="btn btn-primary" type="submit">💾 Сохранить</button>
+    <a class="btn btn-outline" href="{{ url_for('admin_categories') }}">Отмена</a>
+  </div>
 </form>
 {% endblock %}

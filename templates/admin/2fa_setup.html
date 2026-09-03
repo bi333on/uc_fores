@@ -1,25 +1,31 @@
 {% extends "admin/base.html" %}
 {% block title %}Двухфакторная аутентификация{% endblock %}
 {% block content %}
-<h1>Двухфакторная аутентификация</h1>
+<div class="page-head">
+  <h1>Двухфакторная аутентификация</h1>
+</div>
 
 <div class="panel">
   <h2>Настройка 2FA (Google Authenticator)</h2>
-  <p>1. Отсканируйте QR-код или введите секрет вручную в приложении.</p>
-  <img src="data:image/png;base64,{{ qr }}" alt="QR">
+  <p class="muted">Шаг 1. Отсканируйте QR-код в приложении или введите секрет вручную.</p>
+  <img src="data:image/png;base64,{{ qr }}" alt="QR" style="border-radius:10px;border:1px solid var(--border);">
   <p>Секрет: <code>{{ secret }}</code></p>
-  <p>2. Введите код для подтверждения.</p>
-  <form method="post" action="{{ url_for('admin_2fa_setup') }}">
+  <p class="muted">Шаг 2. Введите 6-значный код из приложения для подтверждения.</p>
+  <form method="post" action="{{ url_for('admin_2fa_setup') }}" style="max-width:360px">
     <input type="hidden" name="action" value="enable">
     <label>Код
-      <input type="text" name="code" required inputmode="numeric">
+      <input type="text" name="code" required inputmode="numeric" maxlength="6" placeholder="000000">
     </label>
-    <button class="btn btn-primary" type="submit">Включить 2FA</button>
+    <button class="btn btn-primary btn-block" type="submit">Включить 2FA</button>
   </form>
 </div>
 
-<form method="post" action="{{ url_for('admin_2fa_setup') }}" onsubmit="return confirm('Отключить 2FA?');">
-  <input type="hidden" name="action" value="disable">
-  <button class="btn btn-danger" type="submit">Отключить 2FA</button>
-</form>
+<div class="panel">
+  <h2>Отключить 2FA</h2>
+  <p class="muted">После отключения вход будет выполняться только по логину и паролю.</p>
+  <form method="post" action="{{ url_for('admin_2fa_setup') }}" onsubmit="return confirm('Отключить 2FA?');">
+    <input type="hidden" name="action" value="disable">
+    <button class="btn btn-danger" type="submit">Отключить 2FA</button>
+  </form>
+</div>
 {% endblock %}

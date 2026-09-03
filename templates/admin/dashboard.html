@@ -4,11 +4,31 @@
 <h1>Дашборд</h1>
 
 <div class="stats-grid">
-  <div class="stat"><div class="stat-num">{{ stats.categories }}</div><div>Категории</div></div>
-  <div class="stat"><div class="stat-num">{{ stats.materials }}</div><div>Нормативные документы</div></div>
-  <div class="stat"><div class="stat-num">{{ stats.tests }}</div><div>Тесты</div></div>
-  <div class="stat"><div class="stat-num">{{ stats.employees }}</div><div>Сотрудники</div></div>
-  <div class="stat"><div class="stat-num">{{ stats.attempts }}</div><div>Пройдено</div></div>
+  <div class="stat">
+    <div class="stat-icon" style="background:#eff6ff;color:#2563eb;">☰</div>
+    <div class="stat-num">{{ stats.categories }}</div>
+    <div class="stat-label">Категории</div>
+  </div>
+  <div class="stat">
+    <div class="stat-icon" style="background:#f0fdf4;color:#16a34a;">▤</div>
+    <div class="stat-num">{{ stats.materials }}</div>
+    <div class="stat-label">Документы</div>
+  </div>
+  <div class="stat">
+    <div class="stat-icon" style="background:#fffbeb;color:#d97706;">✓</div>
+    <div class="stat-num">{{ stats.tests }}</div>
+    <div class="stat-label">Тесты</div>
+  </div>
+  <div class="stat">
+    <div class="stat-icon" style="background:#f0f9ff;color:#0284c7;">◉</div>
+    <div class="stat-num">{{ stats.employees }}</div>
+    <div class="stat-label">Сотрудники</div>
+  </div>
+  <div class="stat">
+    <div class="stat-icon" style="background:#fef2f2;color:#dc2626;">≡</div>
+    <div class="stat-num">{{ stats.attempts }}</div>
+    <div class="stat-label">Пройдено тестов</div>
+  </div>
 </div>
 
 <div class="panel">
@@ -20,6 +40,7 @@
 
 <h2>Последние результаты</h2>
 {% if recent %}
+<div class="table-wrap">
 <table class="table">
   <thead><tr><th>Сотрудник</th><th>Тест</th><th>%</th><th>Пройден</th><th>Дата</th></tr></thead>
   <tbody>
@@ -28,12 +49,13 @@
       <td>{{ a.employee.full_name }}</td>
       <td>{{ a.test.title }}</td>
       <td>{{ a.percent|round(1) }}</td>
-      <td>{% if a.passed %}✓{% else %}✗{% endif %}</td>
+      <td>{% if a.passed %}<span class="chip chip-green">✓ да</span>{% else %}<span class="chip chip-red">✗ нет</span>{% endif %}</td>
       <td>{{ a.finished_at|dt }}</td>
     </tr>
     {% endfor %}
   </tbody>
 </table>
+</div>
 {% else %}
 <div class="empty">Пока нет результатов.</div>
 {% endif %}

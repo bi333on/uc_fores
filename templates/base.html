@@ -3,20 +3,27 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#2563eb">
   <title>{% block title %}{{ site_name }}{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3">
   {% block head_extra %}{% endblock %}
 </head>
 <body>
 <header class="site-header">
-  <div class="container header-inner">
-    <a class="logo" href="{{ url_for('index') }}">{{ site_name }}</a>
+  <div class="header-inner">
+    <a class="logo" href="{{ url_for('index') }}">
+      <span class="logo-mark">У</span>
+      <span>{{ site_name }}</span>
+    </a>
     <nav class="site-nav">
       {% if current_user.is_authenticated %}
-        <span class="nav-user">{{ current_user.full_name }}</span>
-        <a class="btn btn-outline" href="{{ url_for('logout') }}">Выйти</a>
+        <span class="nav-user">
+          <span class="nav-avatar">{{ current_user.full_name[:1] }}</span>
+          {{ current_user.full_name }}
+        </span>
+        <a class="btn btn-outline btn-sm" href="{{ url_for('logout') }}">Выйти</a>
       {% else %}
-        <a class="btn btn-outline" href="{{ url_for('login') }}">Личный кабинет</a>
+        <a class="btn btn-primary btn-sm" href="{{ url_for('login') }}">Личный кабинет</a>
       {% endif %}
     </nav>
   </div>
@@ -27,7 +34,10 @@
     {% if messages %}
       <div class="flash-wrap">
         {% for category, message in messages %}
-          <div class="flash flash-{{ category }}">{{ message }}</div>
+          <div class="flash flash-{{ category }}">
+            {{ message }}
+            <button type="button" class="flash-close" aria-label="Закрыть" onclick="this.parentElement.remove()">×</button>
+          </div>
         {% endfor %}
       </div>
     {% endif %}
@@ -36,7 +46,17 @@
 </main>
 
 <footer class="site-footer">
-  <div class="container">© {{ now_year }} {{ site_name }}</div>
+  <div class="container">
+    <nav class="footer-nav">
+      <a href="{{ url_for('index') }}">Курсы</a>
+      {% if current_user.is_authenticated %}
+        <a href="{{ url_for('logout') }}">Выйти</a>
+      {% else %}
+        <a href="{{ url_for('login') }}">Войти</a>
+      {% endif %}
+    </nav>
+    <div>© {{ now_year }} {{ site_name }}</div>
+  </div>
 </footer>
 {% block scripts %}{% endblock %}
 </body>

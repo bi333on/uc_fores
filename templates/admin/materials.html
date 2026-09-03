@@ -7,6 +7,7 @@
 </div>
 
 {% if materials %}
+<div class="table-wrap">
 <table class="table">
   <thead><tr><th>Название</th><th>Категория</th><th>Файл</th><th>Активен</th><th></th></tr></thead>
   <tbody>
@@ -14,8 +15,8 @@
     <tr>
       <td>{{ m.title }}</td>
       <td>{{ m.category.title if m.category else '—' }}</td>
-      <td>{% if m.file_path %}{% set ext = m.file_path.rsplit('.', 1)[-1].lower() if '.' in m.file_path else '' %}{% if ext in ('jpg','jpeg') %}Изображение{% else %}PDF{% endif %}{% else %}текст{% endif %}</td>
-      <td>{% if m.is_active %}✓{% else %}✗{% endif %}</td>
+      <td>{% if m.file_path %}{% set ext = m.file_path.rsplit('.', 1)[-1].lower() if '.' in m.file_path else '' %}{% if ext in ('jpg','jpeg') %}<span class="chip chip-blue">Изображение</span>{% else %}<span class="chip chip-red">PDF</span>{% endif %}{% else %}<span class="chip chip-gray">текст</span>{% endif %}</td>
+      <td>{% if m.is_active %}<span class="chip chip-green">✓ да</span>{% else %}<span class="chip chip-gray">нет</span>{% endif %}</td>
       <td class="row-actions">
         <a class="btn btn-sm btn-outline" href="{{ url_for('admin_material_edit', material_id=m.id) }}">Редактировать</a>
         <form method="post" action="{{ url_for('admin_material_delete', material_id=m.id) }}" onsubmit="return confirm('Удалить документ?');" style="display:inline">
@@ -26,6 +27,7 @@
     {% endfor %}
   </tbody>
 </table>
+</div>
 {% else %}
 <div class="empty">Документов нет.</div>
 {% endif %}

@@ -1,19 +1,22 @@
 {% extends "base.html" %}
 {% block title %}{{ test.title }} — {{ site_name }}{% endblock %}
 {% block content %}
+<a class="back-link" href="{{ url_for('category_page', slug=test.category.slug) }}">← К курсу</a>
 <h1>{{ test.title }}</h1>
 <p class="muted">
   {% if test.test_type == 'final' %}Итоговое{% else %}Предварительное{% endif %} тестирование
   · {{ questions|length }} вопрос(ов) · проходной балл {{ test.passing_score }}%
 </p>
 {% if test.time_limit_minutes %}
-<div class="timer" id="timer" data-minutes="{{ test.time_limit_minutes }}">Осталось: {{ test.time_limit_minutes }}:00</div>
+<div class="timer" id="timer" data-minutes="{{ test.time_limit_minutes }}">
+  <span>⏱ Осталось: <b id="timer-value">{{ test.time_limit_minutes }}:00</b></span>
+</div>
 {% endif %}
 
 <form id="test-form" data-attempt="{{ attempt.id }}">
   {% for q in questions %}
   <div class="question" data-question-id="{{ q.id }}" data-index="{{ loop.index0 }}">
-    <h3><span class="q-num">{{ loop.index }}</span>. {{ q.text }}</h3>
+    <h3><span class="q-num">{{ loop.index }}.</span> {{ q.text }}</h3>
     {% if q.image_path %}
       <img class="q-image" src="{{ url_for('uploaded_file', filename=q.image_path) }}" alt="Вопрос">
     {% endif %}
@@ -32,17 +35,21 @@
   </div>
   {% endfor %}
 
-  <div class="test-nav">
+  <div class="qnav" id="qnav"></div>
+</form>
+
+<div class="test-footer">
+  <div class="test-footer-inner">
     <button class="btn btn-outline" type="button" id="prev-btn">← Назад</button>
     <div class="test-progress">
       <div class="test-progress-bar"><div class="test-progress-fill" id="progress-fill"></div></div>
       <span id="progress">0%</span>
     </div>
-    <button class="btn btn-outline" type="button" id="next-btn">Далее →</button>
+    <button class="btn btn-primary" type="button" id="next-btn">Далее →</button>
+    <button class="btn btn-success" type="button" id="finish-btn" style="display:none">Завершить тест ✓</button>
   </div>
   <div class="test-hint" id="hint" style="display:none">Выберите вариант ответа, чтобы продолжить.</div>
-  <button class="btn btn-primary btn-lg" type="submit" id="finish-btn" style="display:none">Завершить тест</button>
-</form>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -50,6 +57,7 @@
 (function () {
   const form = document.getElementById('test-form');
   const timerEl = document.getElementById('timer');
+  const timerValue = document.getElementById('timer-value');
   const isFinal = {{ 'true' if test.test_type == 'final' else 'false' }};
   const perPage = Math.max(1, parseInt('{{ questions_per_page }}', 10) || 1);
   const questionEls = Array.from(document.querySelectorAll('.question'));
@@ -61,9 +69,11 @@
   const progressEl = document.getElementById('progress');
   const progressFill = document.getElementById('progress-fill');
   const hintEl = document.getElementById('hint');
+  const qnavEl = document.getElementById('qnav');
   let current = 0;
   let secondsLeft = null;
   let timerId = null;
+  let submitted = false;
 
   function visibleQuestions() {
     const start = current * perPage;
@@ -77,6 +87,24 @@
     });
   }
 
+  function buildNav() {
+    if (!qnavEl) return;
+    qnavEl.innerHTML = '';
+    for (let p = 0; p < pages; p++) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'qnav-dot';
+      b.textContent = p + 1;
+      b.dataset.page = p;
+      b.addEventListener('click', function () {
+        current = p;
+        render();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+      qnavEl.appendChild(b);
+    }
+  }
+
   function render() {
     const start = current * perPage;
     const end = Math.min(start + perPage, total);
@@ -86,10 +114,23 @@
     const percent = Math.round(end / total * 100);
     progressEl.textContent = percent + '%';
     progressFill.style.width = percent + '%';
+
     prevBtn.style.display = current === 0 ? 'none' : '';
     const isLast = current >= pages - 1;
     nextBtn.style.display = isLast ? 'none' : '';
     finishBtn.style.display = isLast ? '' : 'none';
+
+    if (qnavEl) {
+      Array.from(qnavEl.children).forEach(function (dot, p) {
+        dot.classList.toggle('current', p === current);
+        const s = p * perPage;
+        const e = Math.min(s + perPage, total);
+        const answered = questionEls.slice(s, e).some(function (qEl) {
+          return qEl.querySelectorAll('input:checked').length > 0;
+        });
+        dot.classList.toggle('answered', answered && p !== current);
+      });
+    }
 
     if (isFinal) {
       const answered = pageAnswered();
@@ -107,11 +148,17 @@
   }
 
   prevBtn.addEventListener('click', function () {
-    if (current > 0) { current -= 1; render(); window.scrollTo(0, 0); }
+    if (current > 0) { current -= 1; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
   });
   nextBtn.addEventListener('click', function () {
     if (isFinal && !pageAnswered()) return;
-    if (current < pages - 1) { current += 1; render(); window.scrollTo(0, 0); }
+    if (current < pages - 1) { current += 1; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  });
+  finishBtn.addEventListener('click', function () {
+    if (isFinal && !pageAnswered()) { render(); return; }
+    if (submitted) return;
+    if (!confirm('Завершить тест и отправить ответы?')) return;
+    submitTest();
   });
 
   form.addEventListener('change', function (e) {
@@ -120,13 +167,19 @@
     }
   });
 
+  function updateTimer() {
+    const m = Math.floor(secondsLeft / 60);
+    const s = String(secondsLeft % 60).padStart(2, '0');
+    if (timerValue) timerValue.textContent = m + ':' + s;
+    if (timerEl) timerEl.classList.toggle('timer-low', secondsLeft <= 60);
+  }
+
   if (timerEl) {
     secondsLeft = parseInt(timerEl.dataset.minutes, 10) * 60;
+    updateTimer();
     timerId = setInterval(function () {
       secondsLeft -= 1;
-      const m = Math.floor(secondsLeft / 60);
-      const s = String(secondsLeft % 60).padStart(2, '0');
-      timerEl.textContent = 'Осталось: ' + m + ':' + s;
+      updateTimer();
       if (secondsLeft <= 0) {
         clearInterval(timerId);
         submitTest();
@@ -145,7 +198,12 @@
   }
 
   function submitTest() {
+    if (submitted) return;
+    submitted = true;
     if (timerId) clearInterval(timerId);
+    finishBtn.disabled = true;
+    nextBtn.disabled = true;
+    prevBtn.disabled = true;
     fetch('{{ url_for("submit_test", test_id=test.id) }}', {
       method: 'POST',
       headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
@@ -154,21 +212,12 @@
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (d.ok && d.redirect) { window.location.href = d.redirect; }
-        else { alert(d.error || 'Ошибка'); }
+        else { submitted = false; alert(d.error || 'Ошибка'); }
       })
-      .catch(function () { alert('Ошибка сети'); });
+      .catch(function () { submitted = false; alert('Ошибка сети'); });
   }
 
-  form.addEventListener('submit', function (e) {
-    e.preventDefault();
-    if (isFinal && !pageAnswered()) {
-      render();
-      return;
-    }
-    if (!confirm('Завершить тест и отправить ответы?')) return;
-    submitTest();
-  });
-
+  buildNav();
   render();
 })();
 </script>

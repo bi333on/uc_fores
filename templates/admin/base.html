@@ -3,38 +3,92 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0f172a">
   <title>{% block title %}Админка — {{ site_name }}{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3">
   {% block head_extra %}{% endblock %}
 </head>
 <body class="admin-body">
+{% set ep = request.endpoint or '' %}
+{% set cat_endpoints = ['admin_categories', 'admin_category_new', 'admin_category_edit'] %}
+{% set mat_endpoints = ['admin_materials', 'admin_material_new', 'admin_material_edit'] %}
+{% set test_endpoints = ['admin_tests', 'admin_test_new', 'admin_test_edit', 'admin_test_editor'] %}
+{% set emp_endpoints = ['admin_employees', 'admin_employee_new', 'admin_employee_edit', 'admin_employee_import'] %}
+{% set res_endpoints = ['admin_results', 'admin_result_print'] %}
 <aside class="admin-sidebar">
-  <div class="admin-brand">UC-Fores</div>
+  <div class="admin-brand">
+    <span class="logo-mark">У</span>
+    <span>UC-Fores</span>
+  </div>
   <nav class="admin-nav">
-    <a href="{{ url_for('admin_dashboard') }}">Дашборд</a>
-    <a href="{{ url_for('admin_categories') }}">Категории</a>
-    <a href="{{ url_for('admin_materials') }}">Нормативные документы</a>
-    <a href="{{ url_for('admin_tests') }}">Тесты</a>
-    <a href="{{ url_for('admin_employees') }}">Сотрудники</a>
-    <a href="{{ url_for('admin_import') }}">Импорт WP</a>
-    <a href="{{ url_for('admin_results') }}">Результаты</a>
-    <a href="{{ url_for('admin_settings') }}">Настройки</a>
-    <a href="{{ url_for('admin_2fa_setup') }}">2FA</a>
-    <a href="{{ url_for('admin_logout') }}">Выйти</a>
+    <a href="{{ url_for('admin_dashboard') }}" class="{{ 'active' if ep == 'admin_dashboard' }}">
+      <span class="nav-icon">▦</span> Дашборд
+    </a>
+    <a href="{{ url_for('admin_categories') }}" class="{{ 'active' if ep in cat_endpoints }}">
+      <span class="nav-icon">☰</span> Категории
+    </a>
+    <a href="{{ url_for('admin_materials') }}" class="{{ 'active' if ep in mat_endpoints }}">
+      <span class="nav-icon">▤</span> Документы
+    </a>
+    <a href="{{ url_for('admin_tests') }}" class="{{ 'active' if ep in test_endpoints }}">
+      <span class="nav-icon">✓</span> Тесты
+    </a>
+    <a href="{{ url_for('admin_employees') }}" class="{{ 'active' if ep in emp_endpoints }}">
+      <span class="nav-icon">◉</span> Сотрудники
+    </a>
+    <a href="{{ url_for('admin_import') }}" class="{{ 'active' if ep in ['admin_import', 'admin_import_settings'] }}">
+      <span class="nav-icon">⇩</span> Импорт WP
+    </a>
+    <a href="{{ url_for('admin_results') }}" class="{{ 'active' if ep in res_endpoints }}">
+      <span class="nav-icon">≡</span> Результаты
+    </a>
+    <a href="{{ url_for('admin_settings') }}" class="{{ 'active' if ep == 'admin_settings' }}">
+      <span class="nav-icon">⚙</span> Настройки
+    </a>
+    <a href="{{ url_for('admin_2fa_setup') }}" class="{{ 'active' if ep == 'admin_2fa_setup' }}">
+      <span class="nav-icon">⛨</span> 2FA
+    </a>
   </nav>
+  <div class="admin-sidebar-foot">
+    <a href="{{ url_for('admin_logout') }}">
+      <span class="nav-icon">⏻</span> Выйти
+    </a>
+  </div>
 </aside>
+
+<div class="admin-overlay" id="admin-overlay"></div>
+
 <main class="admin-main">
+  <div class="admin-topbar">
+    <span class="muted">{{ site_name }} · Администрирование</span>
+    <button class="admin-burger" id="admin-burger" type="button" aria-label="Меню">☰</button>
+  </div>
+
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
       <div class="flash-wrap">
         {% for category, message in messages %}
-          <div class="flash flash-{{ category }}">{{ message }}</div>
+          <div class="flash flash-{{ category }}">
+            {{ message }}
+            <button type="button" class="flash-close" aria-label="Закрыть" onclick="this.parentElement.remove()">×</button>
+          </div>
         {% endfor %}
       </div>
     {% endif %}
   {% endwith %}
   {% block content %}{% endblock %}
 </main>
+
+<script>
+(function () {
+  var body = document.body;
+  var burger = document.getElementById('admin-burger');
+  var overlay = document.getElementById('admin-overlay');
+  function close() { body.classList.remove('sidebar-open'); }
+  if (burger) burger.addEventListener('click', function () { body.classList.toggle('sidebar-open'); });
+  if (overlay) overlay.addEventListener('click', close);
+})();
+</script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

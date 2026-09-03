@@ -7,6 +7,7 @@
 </div>
 
 {% if tests %}
+<div class="table-wrap">
 <table class="table">
   <thead><tr><th>Название</th><th>Категория</th><th>Тип</th><th>Балл</th><th>Вопросов</th><th></th></tr></thead>
   <tbody>
@@ -14,7 +15,7 @@
     <tr>
       <td>{{ t.title }}</td>
       <td>{{ t.category.title if t.category else '—' }}</td>
-      <td>{{ 'Предварительный' if t.test_type == 'preliminary' else 'Итоговый' }}</td>
+      <td>{% if t.test_type == 'preliminary' %}<span class="chip chip-amber">Предварительный</span>{% else %}<span class="chip chip-blue">Итоговый</span>{% endif %}</td>
       <td>{{ t.passing_score }}%</td>
       <td>{{ t.questions|length }}</td>
       <td class="row-actions">
@@ -31,6 +32,7 @@
     {% endfor %}
   </tbody>
 </table>
+</div>
 {% else %}
 <div class="empty">Тестов нет.</div>
 {% endif %}
