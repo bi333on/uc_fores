@@ -6,30 +6,24 @@
 <p class="muted">{{ category.title }}</p>
 
 {% if materials %}
-  <ul class="materials">
+  <div class="doc-grid">
     {% for m in materials %}
     {% set ext = m.file_path.rsplit('.', 1)[-1].lower() if m.file_path and '.' in m.file_path else '' %}
-    <li class="material">
-      <div class="material-main">
+    <div class="doc-card">
+      <div class="doc-card-head">
         <span class="doc-icon {% if ext in ('jpg','jpeg') %}doc-icon-img{% else %}doc-icon-pdf{% endif %}">
           {% if ext in ('jpg','jpeg') %}🖼{% else %}📄{% endif %}
         </span>
-        <div>
-          <strong>{{ m.title }}</strong>
-          {% if m.description %}<div class="muted">{{ m.description }}</div>{% endif %}
-          {% if m.content %}<div class="material-text">{{ m.content }}</div>{% endif %}
-        </div>
+        <strong class="doc-title">{{ m.title }}</strong>
       </div>
-      <div class="material-actions">
+      <div class="doc-card-actions">
         {% if m.file_path %}
-          <a class="btn btn-outline btn-sm" href="{{ url_for('material_file', material_id=m.id) }}" {% if ext in ('jpg','jpeg') %}target="_blank" rel="noopener"{% endif %}>
-            {% if ext in ('jpg','jpeg') %}Открыть{% else %}Скачать PDF{% endif %}
-          </a>
+          <a class="btn btn-outline btn-sm" href="{{ url_for('material_file', material_id=m.id) }}" target="_blank" rel="noopener">Открыть</a>
         {% endif %}
       </div>
-    </li>
+    </div>
     {% endfor %}
-  </ul>
+  </div>
 {% else %}
   <div class="empty">Документы не добавлены.</div>
 {% endif %}
