@@ -463,8 +463,9 @@ def material_file(material_id):
     if not material.file_path:
         abort(404)
     ext = os.path.splitext(material.file_path)[1].lower()
-    as_attachment = ext not in {".jpg", ".jpeg"}
-    return send_from_directory(UPLOAD_DIR, material.file_path, as_attachment=as_attachment)
+    if ext in {".jpg", ".jpeg"}:
+        return send_from_directory(UPLOAD_DIR, material.file_path, mimetype="image/jpeg")
+    return send_from_directory(UPLOAD_DIR, material.file_path, mimetype="application/pdf")
 
 
 @app.route("/test/<int:test_id>/")
