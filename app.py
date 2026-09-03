@@ -507,7 +507,13 @@ def take_test(test_id):
     db.session.add(attempt)
     db.session.commit()
 
-    return render_template("test.html", test=test, attempt=attempt, questions=questions)
+    return render_template(
+        "test.html",
+        test=test,
+        attempt=attempt,
+        questions=questions,
+        questions_per_page=test.questions_per_page or 1,
+    )
 
 
 @app.route("/test/<int:test_id>/submit/", methods=["POST"])
@@ -892,6 +898,8 @@ def _test_form(test):
         test.time_limit_minutes = int(tl) if tl.isdigit() else None
         al = (request.form.get("attempts_limit") or "").strip()
         test.attempts_limit = int(al) if al.isdigit() else None
+        qpp = (request.form.get("questions_per_page") or "").strip()
+        test.questions_per_page = int(qpp) if qpp.isdigit() and int(qpp) > 0 else 1
         test.shuffle_questions = request.form.get("shuffle_questions") == "on"
         test.is_active = request.form.get("is_active") == "on"
         test.description = (request.form.get("description") or "").strip()

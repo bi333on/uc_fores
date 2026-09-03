@@ -12,7 +12,7 @@
 
 <form id="test-form" data-attempt="{{ attempt.id }}">
   {% for q in questions %}
-  <div class="question" data-question-id="{{ q.id }}">
+  <div class="question" data-question-id="{{ q.id }}" data-index="{{ loop.index0 }}">
     <h3><span class="q-num">{{ loop.index }}</span>. {{ q.text }}</h3>
     {% if q.image_path %}
       <img class="q-image" src="{{ url_for('uploaded_file', filename=q.image_path) }}" alt="Вопрос">
@@ -31,7 +31,13 @@
     </div>
   </div>
   {% endfor %}
-  <button class="btn btn-primary btn-lg" type="submit">Завершить тест</button>
+
+  <div class="test-nav">
+    <button class="btn btn-outline" type="button" id="prev-btn">← Назад</button>
+    <span class="test-progress" id="progress"></span>
+    <button class="btn btn-outline" type="button" id="next-btn">Далее →</button>
+  </div>
+  <button class="btn btn-primary btn-lg" type="submit" id="finish-btn" style="display:none">Завершить тест</button>
 </form>
 {% endblock %}
 
@@ -40,8 +46,37 @@
 (function () {
   const form = document.getElementById('test-form');
   const timerEl = document.getElementById('timer');
+  const perPage = Math.max(1, parseInt('{{ questions_per_page }}', 10) || 1);
+  const questionEls = Array.from(document.querySelectorAll('.question'));
+  const total = questionEls.length;
+  const pages = Math.ceil(total / perPage);
+  const prevBtn = document.getElementById('prev-btn');
+  const nextBtn = document.getElementById('next-btn');
+  const finishBtn = document.getElementById('finish-btn');
+  const progressEl = document.getElementById('progress');
+  let current = 0;
   let secondsLeft = null;
   let timerId = null;
+
+  function render() {
+    const start = current * perPage;
+    const end = Math.min(start + perPage, total);
+    questionEls.forEach(function (el, idx) {
+      el.style.display = (idx >= start && idx < end) ? '' : 'none';
+    });
+    progressEl.textContent = (current + 1) + ' / ' + pages;
+    prevBtn.style.display = current === 0 ? 'none' : '';
+    const isLast = current >= pages - 1;
+    nextBtn.style.display = isLast ? 'none' : '';
+    finishBtn.style.display = isLast ? '' : 'none';
+  }
+
+  prevBtn.addEventListener('click', function () {
+    if (current > 0) { current -= 1; render(); window.scrollTo(0, 0); }
+  });
+  nextBtn.addEventListener('click', function () {
+    if (current < pages - 1) { current += 1; render(); window.scrollTo(0, 0); }
+  });
 
   if (timerEl) {
     secondsLeft = parseInt(timerEl.dataset.minutes, 10) * 60;
@@ -59,7 +94,7 @@
 
   function collectAnswers() {
     const answers = {};
-    document.querySelectorAll('.question').forEach(function (qEl) {
+    questionEls.forEach(function (qEl) {
       const qid = qEl.dataset.questionId;
       const checked = qEl.querySelectorAll('input:checked');
       answers[qid] = Array.from(checked).map(function (i) { return i.value; });
@@ -84,8 +119,11 @@
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
+    if (!confirm('Завершить тест и отправить ответы?')) return;
     submitTest();
   });
+
+  render();
 })();
 </script>
 {% endblock %}

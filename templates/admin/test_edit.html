@@ -28,6 +28,9 @@
   <label>Лимит попыток (пусто — без ограничения)
     <input type="number" name="attempts_limit" min="1" value="{{ test.attempts_limit if test and test.attempts_limit else '' }}">
   </label>
+  <label>Вопросов на странице (1 — по одному вопросу)
+    <input type="number" name="questions_per_page" min="1" value="{{ test.questions_per_page if test and test.questions_per_page else 1 }}">
+  </label>
   <label>Описание
     <textarea name="description">{{ test.description if test else '' }}</textarea>
   </label>
