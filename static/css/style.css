@@ -179,7 +179,7 @@ label.checkbox input { width: auto; }
 .options { display: flex; flex-direction: column; gap: 6px; }
 .options-head { display: flex; align-items: baseline; gap: 8px; margin: 4px 0 2px; font-weight: 600; font-size: .9rem; }
 .option-row { display: flex; gap: 8px; align-items: center; }
-.option-row input[type=text] { flex: 1 1 auto; min-width: 160px; width: auto; margin-top: 0; }
+.option-row .opt-text { flex: 1 1 auto; width: auto; max-width: none; min-width: 200px; margin-top: 0; }
 .option-row input[type=checkbox] { width: auto; }
 .opt-correct-wrap { display: inline-flex; align-items: center; gap: 6px; margin: 0; font-weight: 400; white-space: nowrap; cursor: pointer; flex-shrink: 0; }
 .opt-correct-wrap input { width: auto; }
