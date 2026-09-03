@@ -12,7 +12,10 @@
   <a class="card" href="{{ url_for('category_page', slug=c.slug) }}">
     <h2>{{ c.title }}</h2>
     {% if c.description %}<p>{{ c.description }}</p>{% endif %}
-    <span class="card-link">Перейти →</span>
+    <span class="card-link">
+      Перейти
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+    </span>
   </a>
   {% endfor %}
 </section>

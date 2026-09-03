@@ -2,16 +2,20 @@
 {% block title %}Сотрудники{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h1>Сотрудники</h1>
-  <div>
+  <div class="page-head-title">
+    <h1>Сотрудники</h1>
+    <p class="muted small">Всего: {{ employees|length }}{% if q %} · по запросу «{{ q }}»{% endif %}</p>
+  </div>
+  <div class="page-head-actions">
     <a class="btn btn-outline" href="{{ url_for('admin_employee_import') }}">Импорт CSV/Excel</a>
     <a class="btn btn-primary" href="{{ url_for('admin_employee_new') }}">Добавить</a>
   </div>
 </div>
 
 <form method="get" class="search-row">
-  <input type="text" name="q" value="{{ q }}" placeholder="Поиск по табельному номеру или ФИО">
+  <input type="text" name="q" value="{{ q }}" aria-label="Поиск сотрудников" placeholder="Поиск по табельному номеру или ФИО">
   <button class="btn btn-outline" type="submit">Найти</button>
+  {% if q %}<a class="btn btn-ghost" href="{{ url_for('admin_employees') }}">Сбросить</a>{% endif %}
 </form>
 
 {% if employees %}
@@ -27,7 +31,7 @@
       <td>{{ e.last_login|dt if e.last_login else '—' }}</td>
       <td class="row-actions">
         <a class="btn btn-sm btn-outline" href="{{ url_for('admin_employee_edit', employee_id=e.id) }}">Редактировать</a>
-        <form method="post" action="{{ url_for('admin_employee_delete', employee_id=e.id) }}" onsubmit="return confirm('Удалить сотрудника и его результаты?');" style="display:inline">
+        <form method="post" action="{{ url_for('admin_employee_delete', employee_id=e.id) }}" onsubmit="return confirm('Удалить сотрудника и его результаты?');">
           <button class="btn btn-sm btn-danger" type="submit">Удалить</button>
         </form>
       </td>

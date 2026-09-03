@@ -2,8 +2,13 @@
 {% block title %}Нормативные документы{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h1>Нормативные документы</h1>
-  <a class="btn btn-primary" href="{{ url_for('admin_material_new') }}">Добавить документ</a>
+  <div class="page-head-title">
+    <h1>Нормативные документы</h1>
+    <p class="muted small">Всего: {{ materials|length }}</p>
+  </div>
+  <div class="page-head-actions">
+    <a class="btn btn-primary" href="{{ url_for('admin_material_new') }}">Добавить документ</a>
+  </div>
 </div>
 
 {% if materials %}
@@ -19,7 +24,7 @@
       <td>{% if m.is_active %}<span class="chip chip-green">✓ да</span>{% else %}<span class="chip chip-gray">нет</span>{% endif %}</td>
       <td class="row-actions">
         <a class="btn btn-sm btn-outline" href="{{ url_for('admin_material_edit', material_id=m.id) }}">Редактировать</a>
-        <form method="post" action="{{ url_for('admin_material_delete', material_id=m.id) }}" onsubmit="return confirm('Удалить документ?');" style="display:inline">
+        <form method="post" action="{{ url_for('admin_material_delete', material_id=m.id) }}" onsubmit="return confirm('Удалить документ?');">
           <button class="btn btn-sm btn-danger" type="submit">Удалить</button>
         </form>
       </td>

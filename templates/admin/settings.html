@@ -1,19 +1,31 @@
 {% extends "admin/base.html" %}
 {% block title %}Настройки{% endblock %}
 {% block content %}
-<h1>Настройки</h1>
-<form method="post">
-  <label>Название сайта
-    <input type="text" name="site_name" value="{{ data.site_name }}">
-  </label>
-  <label>Организация (для сертификата)
-    <input type="text" name="cert_org_name" value="{{ data.cert_org_name }}">
-  </label>
-  <label>Подпись (должность/ФИО руководителя, для сертификата)
-    <input type="text" name="cert_signature" value="{{ data.cert_signature }}">
-  </label>
+<div class="page-head">
+  <div class="page-head-title">
+    <h1>Настройки</h1>
+    <p class="muted small">Название сайта и реквизиты, которые попадают в сертификат и протокол.</p>
+  </div>
+</div>
+
+<form method="post" class="form-panel">
+  <div class="panel">
+    <div class="form-grid">
+      <label class="full">Название сайта
+        <input type="text" name="site_name" value="{{ data.site_name }}">
+        <span class="input-hint">Отображается в шапке, заголовках страниц и подвале.</span>
+      </label>
+      <label class="full">Организация (для сертификата)
+        <input type="text" name="cert_org_name" value="{{ data.cert_org_name }}">
+      </label>
+      <label class="full">Подпись (должность и ФИО руководителя)
+        <input type="text" name="cert_signature" value="{{ data.cert_signature }}">
+        <span class="input-hint">Печатается в сертификате и протоколе результата.</span>
+      </label>
+    </div>
+  </div>
   <div class="form-actions">
-    <button class="btn btn-primary" type="submit">💾 Сохранить</button>
+    <button class="btn btn-primary" type="submit">Сохранить</button>
   </div>
 </form>
 {% endblock %}

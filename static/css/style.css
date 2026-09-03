@@ -47,6 +47,27 @@ body {
 
 a { color: var(--primary); text-decoration: none; transition: color var(--transition); }
 a:hover { color: var(--primary-dark); }
+a:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, .35);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* keyboard-only shortcut to the main content */
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: -60px;
+  z-index: 200;
+  padding: 10px 16px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+  font-size: .92rem;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  transition: top var(--transition);
+}
+.skip-link:focus { top: 0; color: #fff; }
 
 h1 { font-size: 1.75rem; margin: 20px 0 10px; line-height: 1.25; letter-spacing: -.01em; }
 h2 { font-size: 1.2rem; margin: 16px 0 10px; letter-spacing: -.01em; }
@@ -159,6 +180,9 @@ h3 { font-size: 1.02rem; }
 .btn-sm { padding: 6px 12px; font-size: .85rem; border-radius: 7px; }
 .btn-lg { padding: 13px 26px; font-size: 1.05rem; border-radius: 10px; }
 .btn-block { width: 100%; }
+/* inline icons inside buttons and links */
+.btn svg, .card-link svg, .back-link svg, .logo svg { width: 1.05em; height: 1.05em; flex-shrink: 0; }
+.btn-lg svg { width: 1.15em; height: 1.15em; }
 
 /* ---------- flash ---------- */
 .flash-wrap { margin: 16px 0; display: flex; flex-direction: column; gap: 8px; }
@@ -239,8 +263,10 @@ h3 { font-size: 1.02rem; }
   font-weight: 600;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
+.card-link svg { width: 15px; height: 15px; transition: transform var(--transition); }
+.card:hover .card-link svg { transform: translateX(3px); }
 
 .empty {
   padding: 32px;
@@ -258,6 +284,9 @@ h3 { font-size: 1.02rem; }
   margin: 14px 0;
   color: #075985;
 }
+.notice-warning { background: var(--warning-soft); border-color: #fde68a; color: #92400e; }
+.notice .btn { margin-top: 10px; }
+.notice code { background: rgba(0, 0, 0, .06); color: inherit; }
 .block { margin: 22px 0; }
 .back-link {
   display: inline-flex;
@@ -290,6 +319,9 @@ h3 { font-size: 1.02rem; }
 .auth-card h1 { font-size: 1.35rem; margin: 0 0 6px; }
 .auth-card .muted { margin: 0 0 20px; }
 .auth-logo { text-align: center; margin-bottom: 16px; }
+.logo-mark-lg { width: 46px; height: 46px; font-size: 1.3rem; border-radius: 12px; }
+/* the submit button sits right under the last field, so lift it a little */
+.auth-card .btn-block { margin-top: 20px; }
 
 /* ---------- forms ---------- */
 label {
@@ -347,11 +379,14 @@ label.checkbox input { width: auto; margin-top: 0; }
 .search-row input, .search-row select { width: auto; flex: 1; min-width: 150px; margin-top: 0; }
 .search-row .btn { flex-shrink: 0; }
 
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; align-items: start; }
 .form-grid .full { grid-column: 1 / -1; }
+/* a button that sits on the same row as the field above/beside it */
+.field-action { display: flex; align-items: flex-end; margin: 14px 0; min-height: 42px; }
 .form-actions { display: flex; gap: 10px; align-items: center; margin-top: 22px; flex-wrap: wrap; }
 @media (max-width: 640px) {
   .form-grid { grid-template-columns: 1fr; }
+  .field-action { margin-top: 0; }
 }
 
 /* ---------- materials ---------- */
@@ -422,6 +457,8 @@ label.checkbox input { width: auto; margin-top: 0; }
   font-weight: 600;
   line-height: 1.5;
 }
+.chip svg { width: 13px; height: 13px; flex-shrink: 0; }
+.chip-inline { margin-left: 2px; background: rgba(255, 255, 255, .22); color: #fff; }
 .chip-blue { background: var(--primary-soft); color: var(--primary); }
 .chip-green { background: var(--success-soft); color: #166534; }
 .chip-red { background: var(--danger-soft); color: #991b1b; }
@@ -446,8 +483,10 @@ label.checkbox input { width: auto; margin-top: 0; }
 }
 .test-row:hover { box-shadow: var(--shadow-md); }
 .test-row.is-locked { opacity: .75; }
+.test-row-main { min-width: 0; }
 .test-actions { flex-shrink: 0; display: flex; gap: 8px; align-items: center; }
 .test-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
+.spaced-top { margin-top: 8px; }
 
 /* ---------- test taking ---------- */
 .timer {
@@ -465,7 +504,10 @@ label.checkbox input { width: auto; margin-top: 0; }
   justify-content: space-between;
   box-shadow: var(--shadow-sm);
 }
+.timer-label { display: inline-flex; align-items: center; gap: 8px; }
+.timer-label svg { width: 17px; height: 17px; color: var(--muted); }
 .timer-low { color: var(--danger) !important; border-color: #fecaca !important; background: var(--danger-soft) !important; animation: pulse 1s infinite; }
+.timer-low .timer-label svg { color: var(--danger); }
 @keyframes pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, .35); }
   50% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
@@ -543,10 +585,27 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 @media (max-width: 640px) {
   .test-footer-inner { flex-wrap: wrap; }
   .test-footer-inner .test-progress { order: -1; flex-basis: 100%; }
+  /* «Назад»/«Далее»/«Завершить» fill the row — the script toggles their
+     inline display, so only the visible ones share the space */
+  .test-footer-inner .btn { flex: 1; }
 }
 
 /* question navigator */
+.qnav-label {
+  margin: 24px 0 8px;
+  font-size: .8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--muted);
+}
 .qnav { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0; }
+/* the script builds the dots, so hide the block while it is still empty and
+   for single-page tests where paging is meaningless (label sits before .qnav) */
+.qnav:empty { display: none; }
+.qnav-label:has(+ .qnav:empty) { display: none; }
+.qnav:has(.qnav-dot:only-child) { display: none; }
+.qnav-label:has(+ .qnav .qnav-dot:only-child) { display: none; }
 .qnav-dot {
   width: 38px;
   height: 38px;
@@ -658,8 +717,23 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   transition: all var(--transition);
 }
 .admin-nav a:hover { background: rgba(255,255,255,.08); color: #fff; }
-.admin-nav a.active { background: var(--primary); color: #fff; }
-.admin-nav .nav-icon { width: 18px; text-align: center; opacity: .85; }
+.admin-nav a.active { background: var(--primary); color: #fff; box-shadow: var(--shadow-sm); }
+.admin-nav a:focus-visible,
+.admin-sidebar-foot a:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: -2px;
+}
+.admin-nav .nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  opacity: .8;
+}
+.admin-nav a.active .nav-icon, .admin-nav a:hover .nav-icon { opacity: 1; }
+.nav-icon svg { width: 17px; height: 17px; }
 .admin-sidebar-foot { padding-top: 12px; border-top: 1px solid rgba(255,255,255,.12); margin-top: 12px; }
 .admin-sidebar-foot a { color: #94a3b8; }
 .admin-sidebar-foot a:hover { background: rgba(220,38,38,.25); color: #fff; }
@@ -717,17 +791,36 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   flex-wrap: wrap;
 }
 .page-head h1 { margin: 0; }
+.page-head .muted { margin: 4px 0 0; }
+.page-head-title { min-width: 0; }
+.page-head-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+@media (max-width: 520px) {
+  .page-head-actions { width: 100%; }
+  .page-head-actions .btn { flex: 1; }
+}
+
+/* admin forms: constrained, carded, two columns where it helps */
+.form-panel { max-width: 780px; }
+.form-panel-wide { max-width: 100%; }
 
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; margin: 18px 0; }
 .stat {
+  display: block;
   background: #fff;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 20px 16px;
   box-shadow: var(--shadow-sm);
   transition: all var(--transition);
+  color: var(--text);
 }
-.stat:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.stat:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+.stat:focus-visible { outline: 3px solid rgba(37, 99, 235, .35); outline-offset: 2px; }
 .stat-icon {
   width: 38px;
   height: 38px;
@@ -738,6 +831,12 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   margin-bottom: 10px;
   font-size: 1.1rem;
 }
+.stat-icon svg { width: 19px; height: 19px; }
+.stat-icon-blue { background: var(--primary-soft); color: var(--primary); }
+.stat-icon-green { background: var(--success-soft); color: var(--success); }
+.stat-icon-amber { background: var(--warning-soft); color: var(--warning); }
+.stat-icon-cyan { background: var(--info-soft); color: var(--info); }
+.stat-icon-red { background: var(--danger-soft); color: var(--danger); }
 .stat-num { font-size: 1.9rem; font-weight: 800; line-height: 1.1; letter-spacing: -.02em; }
 .stat-label { color: var(--muted); font-size: .86rem; margin-top: 4px; }
 
@@ -750,6 +849,8 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   box-shadow: var(--shadow-sm);
 }
 .panel h2 { margin-top: 0; }
+.panel-foot { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+.nowrap { white-space: nowrap; }
 
 .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); background: #fff; }
 .table { width: 100%; border-collapse: collapse; background: #fff; }
@@ -771,7 +872,9 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .table tbody tr { transition: background var(--transition); }
 .table tbody tr:hover { background: #f8fafc; }
 .table tbody tr:last-child td { border-bottom: 0; }
-.row-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; white-space: nowrap; }
+/* action columns wrap on narrow screens instead of forcing the table wider */
+.row-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.row-actions form { display: inline-flex; margin: 0; }
 .update-output {
   background: #0f172a;
   color: #a7f3d0;
@@ -793,9 +896,33 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .qe-head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .qe-head .qe-text { flex: 1; min-width: 200px; margin-top: 0; }
 .qe-head select { width: auto; margin-top: 0; }
+.qe-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 800;
+  font-size: .85rem;
+}
+.qe-foot {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.qe-foot .qe-save { margin-left: auto; }
 .qe-image img { max-width: 240px; max-height: 160px; margin: 8px 0; border-radius: 8px; }
-.qe-image-upload { margin: 6px 0; }
-.options { display: flex; flex-direction: column; gap: 8px; }
+.qe-image-upload { margin: 8px 0; }
+.qe-image-upload .qe-image-input { max-width: 340px; margin-top: 2px; font-size: .85rem; padding: 7px 10px; }
+/* scoped to the editor so it no longer overrides .options on the test page */
+.question-editor .options { margin-top: 10px; }
 .options-head { display: flex; align-items: baseline; gap: 8px; margin: 4px 0 4px; font-weight: 700; font-size: .9rem; }
 .option-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .option-row .opt-text { flex: 1 1 auto; width: auto; max-width: none; min-width: 180px; margin-top: 0; }
@@ -815,6 +942,14 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .option-row .opt-image-input { width: 140px; margin-top: 0; flex-shrink: 0; font-size: .8rem; padding: 6px; }
 .opt-img { max-width: 80px; max-height: 50px; border-radius: 6px; }
 
+/* ---------- 2FA setup ---------- */
+.qr-block { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; margin: 14px 0 18px; }
+.qr-image { width: 168px; height: 168px; border-radius: 10px; border: 1px solid var(--border); background: #fff; padding: 6px; }
+.qr-secret { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.qr-secret code { font-size: .95rem; overflow-wrap: anywhere; }
+.code-form { max-width: 320px; }
+.code-input { letter-spacing: .3em; text-align: center; font-size: 1.15rem; font-weight: 600; }
+
 /* ---------- print protocol ---------- */
 .print-page {
   max-width: 720px;
@@ -831,14 +966,32 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .print-row span:first-child { color: var(--muted); flex-shrink: 0; }
 .print-row span:last-child { text-align: right; font-weight: 500; }
 .print-result { margin: 26px 0; text-align: center; font-size: 1.2rem; font-weight: 700; padding: 16px; border-radius: var(--radius-sm); }
-.print-signature { margin-top: 70px; display: flex; justify-content: space-between; }
+.print-signature { margin-top: 70px; display: flex; justify-content: space-between; gap: 16px; }
+.print-toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin: 16px 0; }
 @media print {
   .no-print { display: none !important; }
   body { background: #fff; }
-  .print-page { border: none; box-shadow: none; }
+  .print-page { border: none; box-shadow: none; margin: 0; padding: 0; max-width: none; }
+  .container { padding: 0; max-width: none; }
+  .print-result { border: 1px solid #999; }
+  a[href]::after { content: ""; }
 }
 
 /* ---------- wp import ---------- */
+.step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: .82rem;
+  font-weight: 800;
+  vertical-align: middle;
+}
 .import-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px 14px; }
 .import-grid label { margin: 0; }
 .import-grid input { margin-top: 4px; }
@@ -851,6 +1004,67 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .notfound .code { font-size: 6rem; font-weight: 800; line-height: 1; color: var(--border-strong); letter-spacing: -.03em; }
 .notfound h1 { margin-top: 0; }
 .notfound p { color: var(--muted); margin-bottom: 24px; }
+
+/* ---------- focus states for non-.btn controls ---------- */
+/* text fields already show a ring via input:focus, so only the bare
+   buttons need one added here */
+.qnav-dot:focus-visible,
+.flash-close:focus-visible,
+.pass-toggle:focus-visible,
+.admin-burger:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, .35);
+  outline-offset: 2px;
+}
+input[type=checkbox]:focus-visible,
+input[type=radio]:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, .35);
+  outline-offset: 2px;
+}
+.option:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, .18); }
+.card:focus-visible { outline: 3px solid rgba(37, 99, 235, .35); outline-offset: 2px; }
+.table tbody tr:focus-within { background: var(--primary-soft); }
+
+/* ---------- narrow screens ---------- */
+@media (max-width: 560px) {
+  .container { padding: 0 14px; }
+  h1 { font-size: 1.45rem; }
+  /* long labels must wrap instead of pushing the page sideways */
+  .btn-lg { white-space: normal; text-align: center; width: 100%; }
+  .btn { max-width: 100%; }
+  .hero { padding: 32px 0 20px; }
+  .hero h1 { font-size: 1.75rem; }
+  .hero p { font-size: .98rem; }
+  /* long names would push the logout button off-screen */
+  .nav-user-name { display: none; }
+  .header-inner { padding: 10px 14px; gap: 10px; }
+  .logo { font-size: 1.02rem; }
+  /* the sticky header is shorter here, so the timer sits higher */
+  .timer { top: 58px; }
+  /* the footer bleeds to the screen edges, so its negative margin must
+     match the narrower .container padding above (14px, not 20px) */
+  .test-footer { margin: 20px -14px 0; padding: 12px 14px; }
+  /* keep the show/hide password button a comfortable tap target */
+  .pass-toggle { min-height: 34px; bottom: 4px; padding: 8px 12px; }
+  .material, .doc-card, .test-row { flex-direction: column; align-items: stretch; }
+  .material-actions, .doc-card-actions, .test-actions { justify-content: flex-start; }
+  .test-actions .btn, .doc-card-actions .btn { width: 100%; }
+  .result-score { font-size: 2.1rem; }
+  .ring { width: 124px; height: 124px; }
+  .ring-inner { width: 98px; height: 98px; font-size: 1.55rem; }
+  .print-page { padding: 20px; }
+  .print-signature { flex-direction: column; gap: 12px; }
+}
+
+/* ---------- respect reduced-motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+  .btn:hover, .card:hover, .doc-card:hover, .stat:hover { transform: none; }
+}
 
 /* ---------- misc ---------- */
 code {

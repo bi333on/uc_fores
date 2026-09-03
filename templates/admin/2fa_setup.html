@@ -2,25 +2,33 @@
 {% block title %}Двухфакторная аутентификация{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h1>Двухфакторная аутентификация</h1>
+  <div class="page-head-title">
+    <h1>Двухфакторная аутентификация</h1>
+    <p class="muted small">Дополнительный код при входе в админку.</p>
+  </div>
 </div>
 
-<div class="panel">
+<div class="panel form-panel">
   <h2>Настройка 2FA (Google Authenticator)</h2>
   <p class="muted">Шаг 1. Отсканируйте QR-код в приложении или введите секрет вручную.</p>
-  <img src="data:image/png;base64,{{ qr }}" alt="QR" style="border-radius:10px;border:1px solid var(--border);">
-  <p>Секрет: <code>{{ secret }}</code></p>
+  <div class="qr-block">
+    <img class="qr-image" src="data:image/png;base64,{{ qr }}" alt="QR-код для настройки двухфакторной аутентификации">
+    <div class="qr-secret">
+      <span class="input-hint">Секрет для ручного ввода</span>
+      <code>{{ secret }}</code>
+    </div>
+  </div>
   <p class="muted">Шаг 2. Введите 6-значный код из приложения для подтверждения.</p>
-  <form method="post" action="{{ url_for('admin_2fa_setup') }}" style="max-width:360px">
+  <form method="post" action="{{ url_for('admin_2fa_setup') }}" class="code-form">
     <input type="hidden" name="action" value="enable">
     <label>Код
-      <input type="text" name="code" required inputmode="numeric" maxlength="6" placeholder="000000">
+      <input class="code-input" type="text" name="code" required inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="one-time-code">
     </label>
     <button class="btn btn-primary btn-block" type="submit">Включить 2FA</button>
   </form>
 </div>
 
-<div class="panel">
+<div class="panel form-panel">
   <h2>Отключить 2FA</h2>
   <p class="muted">После отключения вход будет выполняться только по логину и паролю.</p>
   <form method="post" action="{{ url_for('admin_2fa_setup') }}" onsubmit="return confirm('Отключить 2FA?');">

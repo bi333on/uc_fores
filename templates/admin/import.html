@@ -1,11 +1,19 @@
 {% extends "admin/base.html" %}
 {% block title %}Импорт из WordPress{% endblock %}
 {% block content %}
-<h1>Импорт из WordPress (Quiz And Survey Master)</h1>
+<div class="page-head">
+  <div class="page-head-title">
+    <h1>Импорт из WordPress</h1>
+    <p class="muted small">Плагин Quiz And Survey Master — через прямое подключение к MySQL или SQL-дамп.</p>
+  </div>
+</div>
 
 <div class="panel">
-  <h2>1. Подключение к базе WordPress</h2>
-  <p class="muted">Пароль от БД сохраняется в настройках сайта (таблица settings) в открытом виде — используйте доступ только на защищённом сервере.</p>
+  <h2><span class="step-num">1</span> Подключение к базе WordPress</h2>
+  <div class="notice notice-warning">
+    Пароль от БД сохраняется в настройках сайта (таблица <code>settings</code>) в открытом виде —
+    используйте доступ только на защищённом сервере.
+  </div>
   <form method="post" action="{{ url_for('admin_import_settings') }}" class="import-form">
     <div class="import-grid">
       <label>Хост <input type="text" name="wp_host" value="{{ cfg.wp_host }}" placeholder="localhost"></label>
@@ -19,19 +27,19 @@
     </div>
     <button class="btn btn-primary" type="submit">Сохранить настройки</button>
   </form>
-  <button class="btn btn-outline" id="check-btn" style="margin-top:10px">Проверить подключение</button>
+  <button class="btn btn-outline spaced-top" id="check-btn">Проверить подключение</button>
   <pre class="update-output" id="check-output" style="display:none"></pre>
 </div>
 
 <div class="panel">
-  <h2>2. Импорт</h2>
-  <p class="muted">Порядок: сначала пользователи, затем тесты (категории + вопросы), затем результаты, затем документы.</p>
+  <h2><span class="step-num">2</span> Импорт</h2>
+  <p class="muted">Порядок важен: сначала пользователи, затем тесты (категории + вопросы), затем результаты, затем документы.</p>
   <div class="import-actions">
-    <button class="btn btn-primary" data-action="{{ url_for('admin_import_users') }}">Пользователи</button>
-    <button class="btn btn-primary" data-action="{{ url_for('admin_import_quizzes') }}">Тесты и вопросы</button>
-    <button class="btn btn-primary" data-action="{{ url_for('admin_import_results') }}">Результаты</button>
+    <button type="button" class="btn btn-primary" data-action="{{ url_for('admin_import_users') }}">Пользователи</button>
+    <button type="button" class="btn btn-primary" data-action="{{ url_for('admin_import_quizzes') }}">Тесты и вопросы</button>
+    <button type="button" class="btn btn-primary" data-action="{{ url_for('admin_import_results') }}">Результаты</button>
   </div>
-  <div class="import-docs" style="margin-top:12px">
+  <div class="import-docs spaced-top">
     <form id="docs-form">
       <label>Категория для нормативных документов (PDF)
         <select name="category_id" required>
@@ -48,7 +56,7 @@
 </div>
 
 <div class="panel">
-  <h2>3. Импорт из SQL-дампа (phpMyAdmin) — без доступа к MySQL</h2>
+  <h2><span class="step-num">3</span> Импорт из SQL-дампа (phpMyAdmin) — без доступа к MySQL</h2>
   <p class="muted">
     В phpMyAdmin: Экспорт → формат SQL → (рекомендуется сжатие <b>gzip</b>) → скачать файл. Затем загрузите
     <code>.sql</code> или <code>.sql.gz</code> ниже — парсер прочитает его локально. Максимальный размер задаётся

@@ -2,8 +2,13 @@
 {% block title %}Категории{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h1>Категории тестов</h1>
-  <a class="btn btn-primary" href="{{ url_for('admin_category_new') }}">Добавить категорию</a>
+  <div class="page-head-title">
+    <h1>Категории тестов</h1>
+    <p class="muted small">Всего: {{ categories|length }}</p>
+  </div>
+  <div class="page-head-actions">
+    <a class="btn btn-primary" href="{{ url_for('admin_category_new') }}">Добавить категорию</a>
+  </div>
 </div>
 
 {% if categories %}
@@ -19,7 +24,7 @@
       <td>{% if c.is_active %}<span class="chip chip-green">✓ да</span>{% else %}<span class="chip chip-gray">нет</span>{% endif %}</td>
       <td class="row-actions">
         <a class="btn btn-sm btn-outline" href="{{ url_for('admin_category_edit', category_id=c.id) }}">Редактировать</a>
-        <form method="post" action="{{ url_for('admin_category_delete', category_id=c.id) }}" onsubmit="return confirm('Удалить категорию и всё содержимое?');" style="display:inline">
+        <form method="post" action="{{ url_for('admin_category_delete', category_id=c.id) }}" onsubmit="return confirm('Удалить категорию и всё содержимое?');">
           <button class="btn btn-sm btn-danger" type="submit">Удалить</button>
         </form>
       </td>

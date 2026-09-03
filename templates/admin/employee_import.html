@@ -1,19 +1,34 @@
 {% extends "admin/base.html" %}
 {% block title %}Импорт сотрудников{% endblock %}
 {% block content %}
-<h1>Импорт сотрудников</h1>
-<p class="muted">
-  Загрузите CSV или XLSX. Обязательные колонки: «табельный номер» и «ФИО».
-  Опционально: «пароль» (если нет — используется пароль по умолчанию из настроек).
-</p>
+<div class="page-head">
+  <div class="page-head-title">
+    <h1>Импорт сотрудников</h1>
+    <p class="muted small">Массовое добавление из таблицы CSV или Excel.</p>
+  </div>
+  <div class="page-head-actions">
+    <a class="btn btn-ghost" href="{{ url_for('admin_employees') }}">← К списку</a>
+  </div>
+</div>
+
 {% if result %}
 <div class="flash flash-{{ result[0] }}">{{ result[1] }}</div>
 {% endif %}
-<form method="post" enctype="multipart/form-data">
-  <label>Файл
-    <input type="file" name="file" accept=".csv,.xlsx,.xls" required>
-  </label>
-  <button class="btn btn-primary" type="submit">Импортировать</button>
-  <a class="btn btn-outline" href="{{ url_for('admin_employees') }}">Назад</a>
+
+<form method="post" enctype="multipart/form-data" class="form-panel">
+  <div class="panel">
+    <div class="notice">
+      <b>Обязательные колонки:</b> «табельный номер» и «ФИО».<br>
+      <b>Опционально:</b> «пароль» — если колонки нет, используется пароль по умолчанию из настроек.
+    </div>
+    <label>Файл
+      <input type="file" name="file" accept=".csv,.xlsx,.xls" required>
+      <span class="input-hint">Поддерживаются форматы CSV, XLSX и XLS.</span>
+    </label>
+  </div>
+  <div class="form-actions">
+    <button class="btn btn-primary" type="submit">Импортировать</button>
+    <a class="btn btn-outline" href="{{ url_for('admin_employees') }}">Отмена</a>
+  </div>
 </form>
 {% endblock %}

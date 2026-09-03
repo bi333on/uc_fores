@@ -1,64 +1,89 @@
 {% extends "admin/base.html" %}
 {% block title %}Дашборд{% endblock %}
 {% block content %}
-<h1>Дашборд</h1>
+{% set icon_attrs = 'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"' %}
+<div class="page-head">
+  <div class="page-head-title">
+    <h1>Дашборд</h1>
+    <p class="muted small">Сводка по учебному центру.</p>
+  </div>
+</div>
 
 <div class="stats-grid">
-  <div class="stat">
-    <div class="stat-icon" style="background:#eff6ff;color:#2563eb;">☰</div>
+  <a class="stat" href="{{ url_for('admin_categories') }}">
+    <div class="stat-icon stat-icon-blue">
+      <svg {{ icon_attrs|safe }}><path d="M3 7a2 2 0 0 1 2-2h3.6l1.8 2H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+    </div>
     <div class="stat-num">{{ stats.categories }}</div>
     <div class="stat-label">Категории</div>
-  </div>
-  <div class="stat">
-    <div class="stat-icon" style="background:#f0fdf4;color:#16a34a;">▤</div>
+  </a>
+  <a class="stat" href="{{ url_for('admin_materials') }}">
+    <div class="stat-icon stat-icon-green">
+      <svg {{ icon_attrs|safe }}><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6"/><path d="M9 17h4"/></svg>
+    </div>
     <div class="stat-num">{{ stats.materials }}</div>
     <div class="stat-label">Документы</div>
-  </div>
-  <div class="stat">
-    <div class="stat-icon" style="background:#fffbeb;color:#d97706;">✓</div>
+  </a>
+  <a class="stat" href="{{ url_for('admin_tests') }}">
+    <div class="stat-icon stat-icon-amber">
+      <svg {{ icon_attrs|safe }}><path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1z"/><path d="M16 6h2a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2"/><path d="M9 13.5l2 2 4-4"/></svg>
+    </div>
     <div class="stat-num">{{ stats.tests }}</div>
     <div class="stat-label">Тесты</div>
-  </div>
-  <div class="stat">
-    <div class="stat-icon" style="background:#f0f9ff;color:#0284c7;">◉</div>
+  </a>
+  <a class="stat" href="{{ url_for('admin_employees') }}">
+    <div class="stat-icon stat-icon-cyan">
+      <svg {{ icon_attrs|safe }}><path d="M16 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20"/><circle cx="9.5" cy="7.5" r="3.5"/><path d="M21 20v-1.5a4 4 0 0 0-3-3.87"/><path d="M16.5 4.13a3.5 3.5 0 0 1 0 6.74"/></svg>
+    </div>
     <div class="stat-num">{{ stats.employees }}</div>
     <div class="stat-label">Сотрудники</div>
-  </div>
-  <div class="stat">
-    <div class="stat-icon" style="background:#fef2f2;color:#dc2626;">≡</div>
+  </a>
+  <a class="stat" href="{{ url_for('admin_results') }}">
+    <div class="stat-icon stat-icon-red">
+      <svg {{ icon_attrs|safe }}><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg>
+    </div>
     <div class="stat-num">{{ stats.attempts }}</div>
     <div class="stat-label">Пройдено тестов</div>
+  </a>
+</div>
+
+<div class="panel">
+  <h2>Последние результаты</h2>
+  {% if recent %}
+  <div class="table-wrap">
+  <table class="table">
+    <thead><tr><th>Сотрудник</th><th>Тест</th><th>%</th><th>Пройден</th><th>Дата</th></tr></thead>
+    <tbody>
+      {% for a in recent %}
+      <tr>
+        <td>{{ a.employee.full_name }}</td>
+        <td>{{ a.test.title }}</td>
+        <td><b>{{ a.percent|round(1) }}</b></td>
+        <td>{% if a.passed %}<span class="chip chip-green">✓ да</span>{% else %}<span class="chip chip-red">✗ нет</span>{% endif %}</td>
+        <td class="nowrap">{{ a.finished_at|dt }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
   </div>
+  <div class="panel-foot">
+    <a class="card-link" href="{{ url_for('admin_results') }}">Весь журнал результатов →</a>
+  </div>
+  {% else %}
+  <div class="empty">Пока нет результатов.</div>
+  {% endif %}
 </div>
 
 <div class="panel">
   <h2>Обновление из Git</h2>
   <p class="muted">Ветка: <b>{{ git.branch }}</b> · коммит: <b>{{ git.commit }}</b></p>
+  <div class="notice notice-warning">
+    Обновление выполняет <code>git reset --hard</code> и перезапускает сервис.
+    Все незакоммиченные изменения на сервере будут потеряны.
+  </div>
   <button class="btn btn-primary" id="update-btn">Обновить</button>
   <pre class="update-output" id="update-output" style="display:none"></pre>
 </div>
-
-<h2>Последние результаты</h2>
-{% if recent %}
-<div class="table-wrap">
-<table class="table">
-  <thead><tr><th>Сотрудник</th><th>Тест</th><th>%</th><th>Пройден</th><th>Дата</th></tr></thead>
-  <tbody>
-    {% for a in recent %}
-    <tr>
-      <td>{{ a.employee.full_name }}</td>
-      <td>{{ a.test.title }}</td>
-      <td>{{ a.percent|round(1) }}</td>
-      <td>{% if a.passed %}<span class="chip chip-green">✓ да</span>{% else %}<span class="chip chip-red">✗ нет</span>{% endif %}</td>
-      <td>{{ a.finished_at|dt }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-</div>
-{% else %}
-<div class="empty">Пока нет результатов.</div>
-{% endif %}
 {% endblock %}
 
 {% block scripts %}

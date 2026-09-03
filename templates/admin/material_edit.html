@@ -1,33 +1,55 @@
 {% extends "admin/base.html" %}
 {% block title %}Нормативный документ{% endblock %}
 {% block content %}
-<h1>{{ 'Редактировать' if material else 'Новый' }} документ</h1>
-<form method="post" enctype="multipart/form-data">
-  <label>Название
-    <input type="text" name="title" value="{{ material.title if material else '' }}" required>
-  </label>
-  <label>Категория
-    <select name="category_id" required>
-      {% for c in categories %}
-      <option value="{{ c.id }}" {% if material and material.category_id == c.id %}selected{% endif %}>{{ c.title }}</option>
-      {% endfor %}
-    </select>
-  </label>
-  <label>Описание
-    <textarea name="description">{{ material.description if material else '' }}</textarea>
-  </label>
-  <label>Текст документа (опционально, вместо/вместе с PDF)
-    <textarea name="content" rows="8">{{ material.content if material else '' }}</textarea>
-  </label>
-  <label>Файл — PDF или изображение JPG/JPEG ({% if material and material.file_path %}заменяет текущий: {{ material.file_path }}{% else %}опционально{% endif %})
-    <input type="file" name="file" accept=".pdf,.jpg,.jpeg">
-  </label>
-  <label>Порядок
-    <input type="number" name="sort_order" value="{{ material.sort_order if material else 0 }}">
-  </label>
-  <label class="checkbox"><input type="checkbox" name="is_active" {% if not material or material.is_active %}checked{% endif %}> Активен</label>
+<div class="page-head">
+  <div class="page-head-title">
+    <h1>{{ 'Редактировать' if material else 'Новый' }} документ</h1>
+    <p class="muted small">Документ можно задать файлом (PDF/JPG), текстом или и тем, и другим.</p>
+  </div>
+  <div class="page-head-actions">
+    <a class="btn btn-ghost" href="{{ url_for('admin_materials') }}">← К списку</a>
+  </div>
+</div>
+
+<form method="post" enctype="multipart/form-data" class="form-panel">
+  <div class="panel">
+    <div class="form-grid">
+      <label>Название
+        <input type="text" name="title" value="{{ material.title if material else '' }}" required>
+      </label>
+      <label>Категория
+        <select name="category_id" required>
+          {% for c in categories %}
+          <option value="{{ c.id }}" {% if material and material.category_id == c.id %}selected{% endif %}>{{ c.title }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="full">Описание
+        <textarea name="description" rows="2">{{ material.description if material else '' }}</textarea>
+      </label>
+      <label class="full">Текст документа
+        <textarea name="content" rows="8">{{ material.content if material else '' }}</textarea>
+        <span class="input-hint">Опционально — вместо файла или вместе с ним.</span>
+      </label>
+      <label>Файл — PDF или JPG/JPEG
+        <input type="file" name="file" accept=".pdf,.jpg,.jpeg">
+        <span class="input-hint">
+          {% if material and material.file_path %}
+            Текущий файл: <b>{{ material.file_path }}</b> — новый заменит его.
+          {% else %}
+            Опционально.
+          {% endif %}
+        </span>
+      </label>
+      <label>Порядок
+        <input type="number" name="sort_order" value="{{ material.sort_order if material else 0 }}">
+        <span class="input-hint">Чем меньше число, тем выше в списке.</span>
+      </label>
+    </div>
+    <label class="checkbox"><input type="checkbox" name="is_active" {% if not material or material.is_active %}checked{% endif %}> Активен</label>
+  </div>
   <div class="form-actions">
-    <button class="btn btn-primary" type="submit">💾 Сохранить</button>
+    <button class="btn btn-primary" type="submit">Сохранить</button>
     <a class="btn btn-outline" href="{{ url_for('admin_materials') }}">Отмена</a>
   </div>
 </form>

@@ -4,13 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Протокол результата</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=4">
 </head>
 <body>
 <div class="container">
-  <div class="no-print" style="margin: 16px 0;">
-    <button class="btn btn-primary" onclick="window.print()">Печать</button>
-    <a class="btn btn-outline" href="{{ url_for('admin_results') }}">← Назад</a>
+  <div class="no-print print-toolbar">
+    <button class="btn btn-primary" onclick="window.print()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="6" y="14" width="12" height="7"/><path d="M6 18H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2"/></svg>
+      Печать
+    </button>
+    <a class="btn btn-outline" href="{{ url_for('admin_results') }}">← Назад к результатам</a>
   </div>
 
   <div class="print-page">

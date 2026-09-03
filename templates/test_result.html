@@ -1,7 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Результат — {{ site_name }}{% endblock %}
 {% block content %}
-<a class="back-link" href="{{ url_for('category_page', slug=test.category.slug) }}">← К курсу</a>
+<a class="back-link" href="{{ url_for('category_page', slug=test.category.slug) }}">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+  К курсу
+</a>
 <h1>Результат теста: {{ test.title }}</h1>
 
 <div class="result-card {% if attempt.passed %}result-passed{% else %}result-failed{% endif %}">
@@ -19,9 +22,12 @@
 </div>
 
 <div class="form-actions">
-  <a class="btn btn-outline" href="{{ url_for('category_page', slug=test.category.slug) }}">← Вернуться к курсу</a>
+  <a class="btn btn-outline" href="{{ url_for('category_page', slug=test.category.slug) }}">Вернуться к курсу</a>
   {% if attempt.passed and test.test_type == 'final' %}
-    <a class="btn btn-success btn-lg" href="{{ url_for('certificate', attempt_id=attempt.id) }}">🎓 Скачать сертификат (PDF)</a>
+    <a class="btn btn-success btn-lg" href="{{ url_for('certificate', attempt_id=attempt.id) }}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12z"/><path d="M8.5 14.5L7 22l5-3 5 3-1.5-7.5"/></svg>
+      Скачать сертификат (PDF)
+    </a>
   {% endif %}
 </div>
 

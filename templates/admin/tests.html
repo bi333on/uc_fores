@@ -2,8 +2,13 @@
 {% block title %}Тесты{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h1>Тесты</h1>
-  <a class="btn btn-primary" href="{{ url_for('admin_test_new') }}">Добавить тест</a>
+  <div class="page-head-title">
+    <h1>Тесты</h1>
+    <p class="muted small">Всего: {{ tests|length }}</p>
+  </div>
+  <div class="page-head-actions">
+    <a class="btn btn-primary" href="{{ url_for('admin_test_new') }}">Добавить тест</a>
+  </div>
 </div>
 
 {% if tests %}
@@ -21,10 +26,10 @@
       <td class="row-actions">
         <a class="btn btn-sm btn-primary" href="{{ url_for('admin_test_editor', test_id=t.id) }}">Конструктор</a>
         <a class="btn btn-sm btn-outline" href="{{ url_for('admin_test_edit', test_id=t.id) }}">Настройки</a>
-        <form method="post" action="{{ url_for('admin_test_duplicate', test_id=t.id) }}" style="display:inline">
+        <form method="post" action="{{ url_for('admin_test_duplicate', test_id=t.id) }}">
           <button class="btn btn-sm btn-outline" type="submit">Дублировать</button>
         </form>
-        <form method="post" action="{{ url_for('admin_test_delete', test_id=t.id) }}" onsubmit="return confirm('Удалить тест и его вопросы?');" style="display:inline">
+        <form method="post" action="{{ url_for('admin_test_delete', test_id=t.id) }}" onsubmit="return confirm('Удалить тест и его вопросы?');">
           <button class="btn btn-sm btn-danger" type="submit">Удалить</button>
         </form>
       </td>

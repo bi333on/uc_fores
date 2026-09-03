@@ -2,30 +2,38 @@
 {% block title %}Результаты{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h1>Журнал результатов</h1>
-  <a class="btn btn-outline" href="{{ url_for('admin_results_export') }}">Экспорт CSV</a>
+  <div class="page-head-title">
+    <h1>Журнал результатов</h1>
+    <p class="muted small">Показано записей: {{ attempts|length }}</p>
+  </div>
+  <div class="page-head-actions">
+    <a class="btn btn-outline" href="{{ url_for('admin_results_export') }}">Экспорт CSV</a>
+  </div>
 </div>
 
 <form method="get" class="search-row">
-  <select name="category_id">
+  <select name="category_id" aria-label="Фильтр по категории">
     <option value="">Все категории</option>
     {% for c in categories %}
     <option value="{{ c.id }}" {% if filters.category_id == c.id %}selected{% endif %}>{{ c.title }}</option>
     {% endfor %}
   </select>
-  <select name="test_id">
+  <select name="test_id" aria-label="Фильтр по тесту">
     <option value="">Все тесты</option>
     {% for t in tests %}
     <option value="{{ t.id }}" {% if filters.test_id == t.id %}selected{% endif %}>{{ t.title }}</option>
     {% endfor %}
   </select>
-  <select name="employee_id">
+  <select name="employee_id" aria-label="Фильтр по сотруднику">
     <option value="">Все сотрудники</option>
     {% for e in employees %}
     <option value="{{ e.id }}" {% if filters.employee_id == e.id %}selected{% endif %}>{{ e.full_name }} ({{ e.employee_id }})</option>
     {% endfor %}
   </select>
   <button class="btn btn-outline" type="submit">Фильтр</button>
+  {% if filters.category_id or filters.test_id or filters.employee_id %}
+    <a class="btn btn-ghost" href="{{ url_for('admin_results') }}">Сбросить</a>
+  {% endif %}
 </form>
 
 {% if attempts %}

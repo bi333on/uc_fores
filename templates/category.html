@@ -1,7 +1,10 @@
 {% extends "base.html" %}
 {% block title %}{{ category.title }} — {{ site_name }}{% endblock %}
 {% block content %}
-<a class="back-link" href="{{ url_for('index') }}">← На главную</a>
+<a class="back-link" href="{{ url_for('index') }}">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+  На главную
+</a>
 <h1>{{ category.title }}</h1>
 {% if category.description %}<p class="muted">{{ category.description }}</p>{% endif %}
 
@@ -13,10 +16,11 @@
 {% else %}
   <section class="block">
     <a class="btn btn-primary btn-lg" href="{{ url_for('category_documents', slug=category.slug) }}">
-      📄 Открыть нормативные документы
-      {% if materials %}<span class="chip chip-blue" style="margin-left:6px">{{ materials|length }}</span>{% endif %}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6"/><path d="M9 11h2"/></svg>
+      Открыть нормативные документы
+      {% if materials %}<span class="chip chip-blue chip-inline">{{ materials|length }}</span>{% endif %}
     </a>
-    {% if not materials %}<p class="muted small" style="margin-top:10px">Документы пока не добавлены.</p>{% endif %}
+    {% if not materials %}<p class="muted small spaced-top">Документы пока не добавлены.</p>{% endif %}
   </section>
 
   <section class="block">
@@ -28,7 +32,7 @@
         {% set locked = is_final and not pred_passed %}
         {% set prelim_done = (not is_final) and s and s.best and s.best.passed %}
         <div class="test-row {{ 'is-locked' if locked }}">
-          <div style="min-width:0">
+          <div class="test-row-main">
             <strong>{{ t.title }}</strong>
             <div class="test-meta">
               {% if is_final %}
@@ -37,11 +41,12 @@
                 <span class="chip chip-amber">Предварительный тест</span>
               {% endif %}
               <span class="chip chip-gray">Проходной балл {{ t.passing_score }}%</span>
+              {% if t.time_limit_minutes %}<span class="chip chip-gray">{{ t.time_limit_minutes }} мин</span>{% endif %}
               {% if t.attempts_limit %}<span class="chip chip-gray">Попыток: {{ t.attempts_limit }}</span>{% endif %}
               {% if s and s.attempts %}<span class="chip chip-gray">Пройдено попыток: {{ s.attempts }}</span>{% endif %}
             </div>
             {% if s and s.best %}
-              <div class="muted" style="margin-top:8px">
+              <div class="muted spaced-top">
                 Лучший результат: <b>{{ s.best.percent|round(1) }}%</b>
                 {% if s.best.passed %}<span class="badge-ok">· пройден ✓</span>{% else %}<span class="badge-fail">· не пройден</span>{% endif %}
               </div>
@@ -49,7 +54,10 @@
           </div>
           <div class="test-actions">
             {% if locked %}
-              <span class="chip chip-red">🔒 Сначала пройдите предварительный тест</span>
+              <span class="chip chip-red">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                Сначала пройдите предварительный тест
+              </span>
             {% elif prelim_done %}
               <button class="btn btn-success" disabled>✓ Пройден</button>
             {% else %}

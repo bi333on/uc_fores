@@ -2,33 +2,43 @@
 {% block title %}Конструктор: {{ test.title }}{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h1>Конструктор: {{ test.title }}</h1>
-  <a class="btn btn-outline" href="{{ url_for('admin_tests') }}">← К тестам</a>
+  <div class="page-head-title">
+    <h1>Конструктор вопросов</h1>
+    <p class="muted small">{{ test.title }} · вопросов: {{ questions|length }}</p>
+  </div>
+  <div class="page-head-actions">
+    <a class="btn btn-outline" href="{{ url_for('admin_test_edit', test_id=test.id) }}">Настройки теста</a>
+    <a class="btn btn-ghost" href="{{ url_for('admin_tests') }}">← К тестам</a>
+  </div>
 </div>
 
 <div id="editor" data-test-id="{{ test.id }}">
   <div class="panel">
     <h2>Добавить вопрос</h2>
     <div class="editor-add">
-      <input type="text" id="new-question-text" placeholder="Текст вопроса">
-      <select id="new-question-type">
+      <input type="text" id="new-question-text" placeholder="Текст вопроса" aria-label="Текст нового вопроса">
+      <select id="new-question-type" aria-label="Тип нового вопроса">
         <option value="single">Один ответ</option>
         <option value="multiple">Несколько ответов</option>
       </select>
       <button class="btn btn-primary" id="add-question-btn">Добавить</button>
     </div>
-    <div class="muted" style="margin-top:8px">После добавления вопроса нажмите «+ Добавить вариант» — появится строка для ввода варианта ответа. Галочкой отмечаются правильные варианты.</div>
+    <div class="input-hint spaced-top">
+      После добавления вопроса нажмите «+ Добавить вариант» — появится строка для ввода варианта ответа.
+      Галочкой отмечаются правильные варианты. Каждый вопрос сохраняется отдельной кнопкой «Сохранить».
+    </div>
   </div>
 
   <div id="questions">
     {% for q in questions %}
     <div class="panel question-editor" data-question-id="{{ q.id }}">
       <div class="qe-head">
-        <select class="qe-type-select">
+        <span class="qe-num">{{ loop.index }}</span>
+        <select class="qe-type-select" aria-label="Тип вопроса">
           <option value="single" {% if q.question_type != 'multiple' %}selected{% endif %}>один ответ</option>
           <option value="multiple" {% if q.question_type == 'multiple' %}selected{% endif %}>несколько ответов</option>
         </select>
-        <input class="qe-text" type="text" value="{{ q.text }}">
+        <input class="qe-text" type="text" value="{{ q.text }}" aria-label="Текст вопроса">
         <button class="btn btn-sm btn-danger qe-delete">Удалить</button>
       </div>
       {% if q.image_path %}
@@ -37,7 +47,8 @@
       </div>
       {% endif %}
       <div class="qe-image-upload">
-        <input type="file" class="qe-image-input" accept=".png,.jpg,.jpeg,.gif,.webp">
+        <span class="input-hint">Картинка к вопросу (необязательно)</span>
+        <input type="file" class="qe-image-input" accept=".png,.jpg,.jpeg,.gif,.webp" aria-label="Картинка к вопросу">
       </div>
       <div class="options">
         <div class="options-head">
@@ -50,19 +61,23 @@
             <input type="checkbox" class="opt-correct" {% if o.is_correct %}checked{% endif %}>
             <span>Правильный</span>
           </label>
-          <input type="text" class="opt-text" value="{{ o.text }}" placeholder="Текст варианта ответа">
-          {% if o.image_path %}<img class="opt-img" src="{{ url_for('uploaded_file', filename=o.image_path) }}">{% endif %}
-          <input type="file" class="opt-image-input" accept=".png,.jpg,.jpeg,.gif,.webp" title="Картинка варианта">
-          <button class="btn btn-sm btn-danger opt-delete">✕</button>
+          <input type="text" class="opt-text" value="{{ o.text }}" placeholder="Текст варианта ответа" aria-label="Текст варианта ответа">
+          {% if o.image_path %}<img class="opt-img" src="{{ url_for('uploaded_file', filename=o.image_path) }}" alt="Картинка варианта">{% endif %}
+          <input type="file" class="opt-image-input" accept=".png,.jpg,.jpeg,.gif,.webp" title="Картинка варианта" aria-label="Картинка варианта">
+          <button class="btn btn-sm btn-danger opt-delete" title="Удалить вариант" aria-label="Удалить вариант">✕</button>
         </div>
         {% endfor %}
       </div>
-      <button class="btn btn-sm btn-outline opt-add">+ Добавить вариант</button>
-      <button class="btn btn-sm btn-primary qe-save">Сохранить</button>
+      <div class="qe-foot">
+        <button class="btn btn-sm btn-outline opt-add">+ Добавить вариант</button>
+        <button class="btn btn-sm btn-primary qe-save">Сохранить</button>
+      </div>
     </div>
     {% endfor %}
   </div>
-  {% if not questions %}<div class="empty">Вопросов пока нет.</div>{% endif %}
+  {% if not questions %}
+    <div class="empty">Вопросов пока нет — добавьте первый в форме выше.</div>
+  {% endif %}
 </div>
 {% endblock %}
 
