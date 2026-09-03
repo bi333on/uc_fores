@@ -1,7 +1,7 @@
 {% extends "admin/base.html" %}
-{% block title %}Материал{% endblock %}
+{% block title %}Нормативный документ{% endblock %}
 {% block content %}
-<h1>{{ 'Редактировать' if material else 'Новый' }} материал</h1>
+<h1>{{ 'Редактировать' if material else 'Новый' }} документ</h1>
 <form method="post" enctype="multipart/form-data">
   <label>Название
     <input type="text" name="title" value="{{ material.title if material else '' }}" required>
@@ -16,7 +16,7 @@
   <label>Описание
     <textarea name="description">{{ material.description if material else '' }}</textarea>
   </label>
-  <label>Текст материала (опционально, вместо/вместе с PDF)
+  <label>Текст документа (опционально, вместо/вместе с PDF)
     <textarea name="content" rows="8">{{ material.content if material else '' }}</textarea>
   </label>
   <label>PDF-файл ({% if material and material.file_path %}заменяет текущий: {{ material.file_path }}{% else %}опционально{% endif %})

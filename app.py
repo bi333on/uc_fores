@@ -836,7 +836,7 @@ def _material_form(material):
                 return render_template("admin/material_edit.html", material=material, categories=categories)
             material.file_path = path
         db.session.commit()
-        flash("Материал сохранён.", "success")
+        flash("Документ сохранён.", "success")
         return redirect(url_for("admin_materials"))
     return render_template("admin/material_edit.html", material=material, categories=categories)
 
@@ -847,7 +847,7 @@ def admin_material_delete(material_id):
     material = Material.query.get_or_404(material_id)
     db.session.delete(material)
     db.session.commit()
-    flash("Материал удалён.", "success")
+    flash("Документ удалён.", "success")
     return redirect(url_for("admin_materials"))
 
 

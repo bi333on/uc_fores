@@ -1,9 +1,9 @@
 {% extends "admin/base.html" %}
-{% block title %}Материалы{% endblock %}
+{% block title %}Нормативные документы{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h1>Обучающие материалы</h1>
-  <a class="btn btn-primary" href="{{ url_for('admin_material_new') }}">Добавить материал</a>
+  <h1>Нормативные документы</h1>
+  <a class="btn btn-primary" href="{{ url_for('admin_material_new') }}">Добавить документ</a>
 </div>
 
 {% if materials %}
@@ -18,7 +18,7 @@
       <td>{% if m.is_active %}✓{% else %}✗{% endif %}</td>
       <td class="row-actions">
         <a class="btn btn-sm btn-outline" href="{{ url_for('admin_material_edit', material_id=m.id) }}">Редактировать</a>
-        <form method="post" action="{{ url_for('admin_material_delete', material_id=m.id) }}" onsubmit="return confirm('Удалить материал?');" style="display:inline">
+        <form method="post" action="{{ url_for('admin_material_delete', material_id=m.id) }}" onsubmit="return confirm('Удалить документ?');" style="display:inline">
           <button class="btn btn-sm btn-danger" type="submit">Удалить</button>
         </form>
       </td>
@@ -27,6 +27,6 @@
   </tbody>
 </table>
 {% else %}
-<div class="empty">Материалов нет.</div>
+<div class="empty">Документов нет.</div>
 {% endif %}
 {% endblock %}

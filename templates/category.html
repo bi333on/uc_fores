@@ -7,12 +7,12 @@
 
 {% if not current_user.is_authenticated %}
   <div class="notice">
-    Для доступа к материалам и тестированию
+    Для доступа к документам и тестированию
     <a href="{{ url_for('login', next=url_for('category_page', slug=category.slug)) }}">войдите в личный кабинет</a>.
   </div>
 {% else %}
   <section class="block">
-    <h2>Обучающие материалы</h2>
+    <h2>Нормативные документы</h2>
     {% if materials %}
       <ul class="materials">
         {% for m in materials %}
@@ -36,7 +36,7 @@
         {% endfor %}
       </ul>
     {% else %}
-      <div class="empty">Материалы не добавлены.</div>
+      <div class="empty">Документы не добавлены.</div>
     {% endif %}
   </section>
 
