@@ -66,6 +66,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
 PDF_EXTS = {".pdf"}
+DOCUMENT_EXTS = {".pdf", ".jpg", ".jpeg"}
 IMPORT_EXTS = {".csv", ".xlsx", ".xls"}
 
 login_manager = LoginManager(app)
@@ -421,9 +422,6 @@ def category_page(slug):
     tests = [t for t in category.tests if t.is_active]
     tests.sort(key=lambda t: 0 if t.test_type == "preliminary" else 1)
 
-    read_ids = set(session.get("read_materials", []) or [])
-    all_read = all(m.id in read_ids for m in materials) if materials else True
-
     statuses = {}
     if current_user.is_authenticated:
         for t in tests:
@@ -441,8 +439,6 @@ def category_page(slug):
         category=category,
         materials=materials,
         tests=tests,
-        read_ids=read_ids,
-        all_read=all_read,
         statuses=statuses,
         pred_passed=pred_passed,
     )
@@ -453,23 +449,11 @@ def category_page(slug):
 def category_documents(slug):
     category = Category.query.filter_by(slug=slug, is_active=True).first_or_404()
     materials = [m for m in category.materials if m.is_active]
-    read_ids = set(session.get("read_materials", []) or [])
     return render_template(
         "documents.html",
         category=category,
         materials=materials,
-        read_ids=read_ids,
     )
-
-
-@app.route("/api/material/<int:material_id>/read/", methods=["POST"])
-@login_required
-def mark_material_read(material_id):
-    material = Material.query.get_or_404(material_id)
-    read = set(session.get("read_materials", []) or [])
-    read.add(material.id)
-    session["read_materials"] = list(read)
-    return jsonify({"ok": True})
 
 
 @app.route("/material/<int:material_id>/file/")
@@ -478,7 +462,9 @@ def material_file(material_id):
     material = Material.query.get_or_404(material_id)
     if not material.file_path:
         abort(404)
-    return send_from_directory(UPLOAD_DIR, material.file_path, as_attachment=True)
+    ext = os.path.splitext(material.file_path)[1].lower()
+    as_attachment = ext not in {".jpg", ".jpeg"}
+    return send_from_directory(UPLOAD_DIR, material.file_path, as_attachment=as_attachment)
 
 
 @app.route("/test/<int:test_id>/")
@@ -844,7 +830,7 @@ def _material_form(material):
         material.is_active = request.form.get("is_active") == "on"
         upload = request.files.get("file")
         if upload and upload.filename:
-            path, err = save_upload(upload, "materials", PDF_EXTS)
+            path, err = save_upload(upload, "materials", DOCUMENT_EXTS)
             if err:
                 flash(err, "danger")
                 return render_template("admin/material_edit.html", material=material, categories=categories)

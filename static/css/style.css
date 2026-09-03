@@ -89,6 +89,10 @@ label.checkbox input { width: auto; }
 /* materials */
 .materials { list-style: none; padding: 0; margin: 0; }
 .material { display: flex; justify-content: space-between; gap: 12px; align-items: center; background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin: 8px 0; }
+.material-main { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.doc-icon { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; flex-shrink: 0; border-radius: 8px; font-size: 1.4rem; }
+.doc-icon-pdf { background: #fff5f5; border: 1px solid #feb2b2; }
+.doc-icon-img { background: #ebf8ff; border: 1px solid #bee3f8; }
 .material-text { white-space: pre-wrap; color: var(--text); margin-top: 6px; font-size: .9rem; }
 .material-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
 

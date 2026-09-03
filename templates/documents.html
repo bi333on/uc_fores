@@ -8,21 +8,24 @@
 {% if materials %}
   <ul class="materials">
     {% for m in materials %}
-    <li class="material" data-material-id="{{ m.id }}">
-      <div>
-        <strong>{{ m.title }}</strong>
-        {% if m.description %}<div class="muted">{{ m.description }}</div>{% endif %}
-        {% if m.content %}<div class="material-text">{{ m.content }}</div>{% endif %}
+    {% set ext = m.file_path.rsplit('.', 1)[-1].lower() if m.file_path and '.' in m.file_path else '' %}
+    <li class="material">
+      <div class="material-main">
+        <span class="doc-icon {% if ext in ('jpg','jpeg') %}doc-icon-img{% else %}doc-icon-pdf{% endif %}">
+          {% if ext in ('jpg','jpeg') %}🖼{% else %}📄{% endif %}
+        </span>
+        <div>
+          <strong>{{ m.title }}</strong>
+          {% if m.description %}<div class="muted">{{ m.description }}</div>{% endif %}
+          {% if m.content %}<div class="material-text">{{ m.content }}</div>{% endif %}
+        </div>
       </div>
       <div class="material-actions">
         {% if m.file_path %}
-          <a class="btn btn-outline btn-sm" href="{{ url_for('material_file', material_id=m.id) }}">Скачать PDF</a>
+          <a class="btn btn-outline btn-sm" href="{{ url_for('material_file', material_id=m.id) }}" {% if ext in ('jpg','jpeg') %}target="_blank" rel="noopener"{% endif %}>
+            {% if ext in ('jpg','jpeg') %}Открыть{% else %}Скачать PDF{% endif %}
+          </a>
         {% endif %}
-        <button class="btn btn-sm {% if m.id in read_ids %}btn-success{% else %}btn-primary{% endif %} read-btn"
-                data-material-id="{{ m.id }}"
-                {% if m.id in read_ids %}disabled{% endif %}>
-          {% if m.id in read_ids %}Изучено ✓{% else %}Отметить изученным{% endif %}
-        </button>
       </div>
     </li>
     {% endfor %}
@@ -30,24 +33,4 @@
 {% else %}
   <div class="empty">Документы не добавлены.</div>
 {% endif %}
-{% endblock %}
-
-{% block scripts %}
-<script>
-document.querySelectorAll('.read-btn').forEach(function (btn) {
-  btn.addEventListener('click', function () {
-    const id = btn.dataset.materialId;
-    fetch('/api/material/' + id + '/read/', { method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'} })
-      .then(function (r) { return r.json(); })
-      .then(function (d) {
-        if (d.ok) {
-          btn.textContent = 'Изучено ✓';
-          btn.classList.remove('btn-primary');
-          btn.classList.add('btn-success');
-          btn.disabled = true;
-        }
-      });
-  });
-});
-</script>
 {% endblock %}
