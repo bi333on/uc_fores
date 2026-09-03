@@ -34,7 +34,10 @@
 
   <div class="test-nav">
     <button class="btn btn-outline" type="button" id="prev-btn">← Назад</button>
-    <span class="test-progress" id="progress"></span>
+    <div class="test-progress">
+      <div class="test-progress-bar"><div class="test-progress-fill" id="progress-fill"></div></div>
+      <span id="progress">0%</span>
+    </div>
     <button class="btn btn-outline" type="button" id="next-btn">Далее →</button>
   </div>
   <button class="btn btn-primary btn-lg" type="submit" id="finish-btn" style="display:none">Завершить тест</button>
@@ -54,6 +57,7 @@
   const nextBtn = document.getElementById('next-btn');
   const finishBtn = document.getElementById('finish-btn');
   const progressEl = document.getElementById('progress');
+  const progressFill = document.getElementById('progress-fill');
   let current = 0;
   let secondsLeft = null;
   let timerId = null;
@@ -64,7 +68,9 @@
     questionEls.forEach(function (el, idx) {
       el.style.display = (idx >= start && idx < end) ? '' : 'none';
     });
-    progressEl.textContent = (current + 1) + ' / ' + pages;
+    const percent = Math.round(end / total * 100);
+    progressEl.textContent = percent + '%';
+    progressFill.style.width = percent + '%';
     prevBtn.style.display = current === 0 ? 'none' : '';
     const isLast = current >= pages - 1;
     nextBtn.style.display = isLast ? 'none' : '';

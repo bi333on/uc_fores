@@ -31,6 +31,9 @@
   <label>Вопросов на странице (1 — по одному вопросу)
     <input type="number" name="questions_per_page" min="1" value="{{ test.questions_per_page if test and test.questions_per_page else 1 }}">
   </label>
+  <label>Сколько вопросов задавать в тесте (пусто — все вопросы)
+    <input type="number" name="questions_limit" min="1" value="{{ test.questions_limit if test and test.questions_limit else '' }}">
+  </label>
   <label>Описание
     <textarea name="description">{{ test.description if test else '' }}</textarea>
   </label>

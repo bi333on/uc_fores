@@ -497,6 +497,9 @@ def take_test(test_id):
 
         random.shuffle(questions)
 
+    if test.questions_limit and test.questions_limit < len(questions):
+        questions = questions[: test.questions_limit]
+
     attempt = Attempt(
         employee_id=current_user.id,
         test_id=test.id,
@@ -900,6 +903,8 @@ def _test_form(test):
         test.attempts_limit = int(al) if al.isdigit() else None
         qpp = (request.form.get("questions_per_page") or "").strip()
         test.questions_per_page = int(qpp) if qpp.isdigit() and int(qpp) > 0 else 1
+        ql = (request.form.get("questions_limit") or "").strip()
+        test.questions_limit = int(ql) if ql.isdigit() and int(ql) > 0 else None
         test.shuffle_questions = request.form.get("shuffle_questions") == "on"
         test.is_active = request.form.get("is_active") == "on"
         test.description = (request.form.get("description") or "").strip()

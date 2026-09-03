@@ -118,7 +118,9 @@ label.checkbox input { width: auto; }
 /* test taking */
 .timer { position: sticky; top: 0; background: #fff; border: 1px solid var(--border); padding: 8px 14px; border-radius: 8px; font-weight: 600; margin: 12px 0; z-index: 5; }
 .test-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 20px 0 12px; }
-.test-progress { font-weight: 600; color: var(--muted); }
+.test-progress { flex: 1; text-align: center; font-weight: 600; color: var(--muted); }
+.test-progress-bar { height: 8px; background: var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 6px; }
+.test-progress-fill { height: 100%; width: 0; background: var(--primary); border-radius: 6px; transition: width .25s; }
 .question { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin: 16px 0; }
 .q-num { color: var(--primary); }
 .q-image { max-width: 100%; max-height: 320px; display: block; margin: 10px 0; border-radius: 6px; }

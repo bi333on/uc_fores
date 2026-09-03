@@ -80,6 +80,7 @@ class Test(db.Model):
     time_limit_minutes = db.Column(db.Integer, nullable=True)
     attempts_limit = db.Column(db.Integer, nullable=True)
     questions_per_page = db.Column(db.Integer, default=1)  # сколько вопросов на странице (0 = все)
+    questions_limit = db.Column(db.Integer, nullable=True)  # сколько всего вопросов показывать в тесте (пусто = все)
     shuffle_questions = db.Column(db.Boolean, default=True)
     is_active = db.Column(db.Boolean, default=True)
     external_quiz_id = db.Column(db.Integer, nullable=True)
