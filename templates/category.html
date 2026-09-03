@@ -22,6 +22,7 @@
         {% set s = statuses.get(t.id) %}
         {% set is_final = t.test_type == 'final' %}
         {% set locked = is_final and not pred_passed %}
+        {% set prelim_done = (not is_final) and s and s.best and s.best.passed %}
         <div class="test-row">
           <div>
             <strong>{{ t.title }}</strong>
@@ -39,6 +40,8 @@
           <div class="test-actions">
             {% if locked %}
               <span class="badge-fail">Доступно после предварительного теста</span>
+            {% elif prelim_done %}
+              <button class="btn btn-primary" disabled>Предварительный тест пройден ✓</button>
             {% else %}
               <a class="btn btn-primary" href="{{ url_for('take_test', test_id=t.id) }}">
                 {{ 'Пройти итоговый тест' if is_final else 'Пройти предварительный тест' }}
