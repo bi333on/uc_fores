@@ -564,8 +564,10 @@ def change_password():
     if request.method == "POST":
         p1 = request.form.get("password") or ""
         p2 = request.form.get("password2") or ""
-        if len(p1) < 6:
-            error = "Пароль должен быть не короче 6 символов"
+        if len(p1) < 8:
+            error = "Пароль должен быть не короче 8 символов"
+        elif not re.search(r"[A-Za-z]", p1) or not re.search(r"\d", p1):
+            error = "Пароль должен содержать буквы и цифры"
         elif p1 != p2:
             error = "Пароли не совпадают"
         else:
