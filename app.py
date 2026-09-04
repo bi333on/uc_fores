@@ -673,6 +673,7 @@ def take_test(test_id):
         started_at=datetime.now(timezone.utc),
         status="in_progress",
         total=len(questions),
+        questions_json=json.dumps([q.id for q in questions]),
     )
     db.session.add(attempt)
     db.session.commit()
@@ -702,9 +703,22 @@ def submit_test(test_id):
     if not attempt:
         return jsonify({"ok": False, "error": "Попытка не найдена"}), 400
 
-    questions = {
-        q.id: q for q in Question.query.filter_by(test_id=test.id, is_active=True).all()
-    }
+    # Оцениваем только те вопросы, которые были показаны в этой попытке
+    try:
+        shown_ids = [int(x) for x in json.loads(attempt.questions_json or "[]")]
+    except Exception:  # noqa: BLE001
+        shown_ids = []
+
+    questions = {}
+    if shown_ids:
+        for q in Question.query.filter(Question.id.in_(shown_ids)).all():
+            questions[q.id] = q
+    else:
+        # Совместимость со старыми попытками (без questions_json)
+        questions = {
+            q.id: q for q in Question.query.filter_by(test_id=test.id, is_active=True).all()
+        }
+
     correct = 0
     details = []
     for qid, q in questions.items():
@@ -751,7 +765,14 @@ def test_result(attempt_id):
     if attempt.employee_id != current_user.id:
         abort(403)
     details = json.loads(attempt.answers_json or "[]")
-    questions_map = {q.id: q for q in attempt.test.questions}
+
+    # Карта вопросов — только те, что были в разборе этой попытки
+    detail_ids = {d.get("question_id") for d in details if d.get("question_id")}
+    if detail_ids:
+        questions_map = {q.id: q for q in Question.query.filter(Question.id.in_(detail_ids)).all()}
+    else:
+        questions_map = {q.id: q for q in attempt.test.questions}
+
     return render_template(
         "test_result.html",
         attempt=attempt,

@@ -137,6 +137,7 @@ class Attempt(db.Model):
     percent = db.Column(db.Float, default=0.0)
     passed = db.Column(db.Boolean, default=False)
     status = db.Column(db.String(20), default="in_progress")  # in_progress | finished
+    questions_json = db.Column(db.Text, default="[]")  # id вопросов, показанных в этой попытке
     answers_json = db.Column(db.Text, default="[]")
 
     employee = db.relationship("Employee", backref="attempts")
