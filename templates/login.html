@@ -11,7 +11,7 @@
     {% if error %}<div class="flash flash-danger">{{ error }}</div>{% endif %}
     <form method="post" action="{{ url_for('login', next=request.args.get('next')) }}">
       <label>Табельный номер
-        <input type="text" name="employee_id" required autofocus autocomplete="username" placeholder="Например, 12345">
+        <input type="text" name="employee_id" id="employee_id" required autofocus autocomplete="username" placeholder="Например, 12345">
       </label>
       <label>Пароль
         <span class="pass-field">
@@ -19,6 +19,10 @@
           <button type="button" class="pass-toggle" onclick="togglePass(this)">Показать</button>
         </span>
       </label>
+      <div id="new-pass-hint" class="notice" style="display:none">
+        Пароль ещё не задан. Введите новый пароль (не менее 8 символов, буквы и цифры)
+        или <button type="button" class="btn btn-outline btn-sm" id="gen-login-password">Сгенерировать</button>.
+      </div>
       <button class="btn btn-primary btn-block" type="submit">Войти</button>
     </form>
   </div>
@@ -32,5 +36,44 @@ function togglePass(btn) {
   i.type = i.type === 'password' ? 'text' : 'password';
   btn.textContent = i.type === 'password' ? 'Показать' : 'Скрыть';
 }
+
+(function () {
+  var empInput = document.getElementById('employee_id');
+  var passInput = document.getElementById('password');
+  var hint = document.getElementById('new-pass-hint');
+  var genBtn = document.getElementById('gen-login-password');
+
+  var chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  function generate() {
+    var s = '';
+    var arr = new Uint32Array(8);
+    crypto.getRandomValues(arr);
+    for (var i = 0; i < 8; i++) s += chars[arr[i] % chars.length];
+    return s;
+  }
+
+  if (genBtn) {
+    genBtn.addEventListener('click', function () {
+      passInput.value = generate();
+      passInput.type = 'text';
+    });
+  }
+
+  function checkEmployee() {
+    var id = empInput.value.trim();
+    if (!id) { if (hint) hint.style.display = 'none'; return; }
+    fetch('/api/employee/check/?employee_id=' + encodeURIComponent(id))
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (hint) hint.style.display = (d.ok && d.must_set_password) ? '' : 'none';
+      })
+      .catch(function () { if (hint) hint.style.display = 'none'; });
+  }
+
+  if (empInput && hint) {
+    empInput.addEventListener('blur', checkEmployee);
+    empInput.addEventListener('change', checkEmployee);
+  }
+})();
 </script>
 {% endblock %}

@@ -535,18 +535,45 @@ def login():
         employee_id = (request.form.get("employee_id") or "").strip()
         password = request.form.get("password") or ""
         employee = Employee.query.filter_by(employee_id=employee_id, is_active=True).first()
-        if employee and check_password_hash(employee.password_hash, password):
+
+        if not employee:
+            error = "Неверный табельный номер или пароль"
+        elif employee.must_change_password:
+            # Пароль ещё не задан — принимаем введённый как новый пароль
+            if len(password) < 8:
+                error = "Пароль должен быть не короче 8 символов"
+            elif not re.search(r"[A-Za-z]", password) or not re.search(r"\d", password):
+                error = "Пароль должен содержать буквы и цифры"
+            else:
+                employee.password_hash = generate_password_hash(password)
+                employee.must_change_password = False
+                employee.last_login = datetime.now(timezone.utc)
+                db.session.commit()
+                login_user(employee)
+                return redirect(url_for("index"))
+        elif check_password_hash(employee.password_hash, password):
             login_user(employee)
             employee.last_login = datetime.now(timezone.utc)
             db.session.commit()
-            if employee.must_change_password:
-                return redirect(url_for("change_password"))
             nxt = request.args.get("next")
             if nxt and nxt.startswith("/"):
                 return redirect(nxt)
             return redirect(url_for("index"))
-        error = "Неверный табельный номер или пароль"
+        else:
+            error = "Неверный табельный номер или пароль"
     return render_template("login.html", error=error)
+
+
+@app.route("/api/employee/check/")
+def api_employee_check():
+    """Проверяет, нужно ли сотруднику задать пароль (must_change_password)."""
+    employee_id = (request.args.get("employee_id") or "").strip()
+    if not employee_id:
+        return jsonify({"ok": False, "error": "Пустой табельный номер"})
+    employee = Employee.query.filter_by(employee_id=employee_id, is_active=True).first()
+    if not employee:
+        return jsonify({"ok": False, "error": "Сотрудник не найден"})
+    return jsonify({"ok": True, "must_set_password": bool(employee.must_change_password)})
 
 
 @app.route("/logout/")
