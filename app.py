@@ -1505,9 +1505,13 @@ def _employee_form(employee):
         employee.full_name = full_name
         role = (request.form.get("role") or "student").strip()
         role = role if role in ROLES else "student"
-        # Редактор не может назначать роль «Администратор»
-        if current_admin_role() == "editor" and role == "admin":
-            role = "editor"
+        # Редактор может менять роль только у учеников и не может назначать администратора
+        if current_admin_role() == "editor":
+            if role == "admin":
+                role = "student"
+            elif employee and employee.role not in ("student", None, ""):
+                # редактируем не ученика — роль не меняем
+                role = employee.role
         employee.role = role
         # Индивидуальные права редактора (галочки)
         if employee.role == "editor":
@@ -2048,10 +2052,28 @@ def _run_import_results(rows, value):
 @admin_required
 def admin_employee_delete(employee_id):
     employee = Employee.query.get_or_404(employee_id)
+    if current_admin_role() == "editor":
+        flash("Редактор не может удалять сотрудников.", "danger")
+        return redirect(url_for("admin_employees"))
     Attempt.query.filter_by(employee_id=employee.id).delete()
     db.session.delete(employee)
     db.session.commit()
     flash("Сотрудник удалён.", "success")
+    return redirect(url_for("admin_employees"))
+
+
+@app.route("/admin/employees/<int:employee_id>/reset-password/", methods=["POST"])
+@admin_required
+def admin_employee_reset_password(employee_id):
+    employee = Employee.query.get_or_404(employee_id)
+    # Редактор может сбрасывать пароль только ученикам
+    if current_admin_role() == "editor" and employee.role not in ("student", None, ""):
+        flash("Редактор может сбрасывать пароль только ученикам.", "danger")
+        return redirect(url_for("admin_employees"))
+    employee.password_hash = ""
+    employee.must_change_password = True
+    db.session.commit()
+    flash(f"Пароль сотрудника «{employee.full_name}» сброшен — задаст при следующем входе.", "success")
     return redirect(url_for("admin_employees"))
 
 
@@ -2079,11 +2101,13 @@ def admin_employee_bulk():
         if is_editor and action == "admin":
             flash("Редактор не может назначать роль «Администратор».", "danger")
             return redirect(url_for("admin_employees"))
-        Employee.query.filter(Employee.id.in_(ids)).update(
-            {"role": action}, synchronize_session=False
-        )
+        # Редактор может менять роль только у учеников
+        targets = Employee.query.filter(Employee.id.in_(ids))
+        if is_editor:
+            targets = targets.filter(Employee.role == "student")
+        targets.update({"role": action}, synchronize_session=False)
         db.session.commit()
-        flash(f"Роль изменена на «{ROLE_LABELS[action]}» у {len(ids)} сотрудников.", "success")
+        flash(f"Роль изменена на «{ROLE_LABELS[action]}» у выбранных учеников.", "success")
     elif action == "activate":
         Employee.query.filter(Employee.id.in_(ids)).update(
             {"is_active": True}, synchronize_session=False
@@ -2096,6 +2120,17 @@ def admin_employee_bulk():
         )
         db.session.commit()
         flash(f"Деактивировано сотрудников: {len(ids)}.", "success")
+    elif action == "reset_password":
+        # Редактор может сбрасывать пароль только у учеников, админ — у всех
+        targets = Employee.query.filter(Employee.id.in_(ids))
+        if is_editor:
+            targets = targets.filter(Employee.role == "student")
+        employees = targets.all()
+        for e in employees:
+            e.password_hash = ""
+            e.must_change_password = True
+        db.session.commit()
+        flash(f"Пароль сброшен у {len(employees)} сотрудников — зададут при следующем входе.", "success")
     else:
         flash("Неизвестное действие.", "danger")
     return redirect(url_for("admin_employees"))
