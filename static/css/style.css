@@ -763,14 +763,23 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   background: #fff;
   border-radius: 999px;
 }
+.admin-sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.08);
+}
 .admin-user-avatar {
   display: inline-flex; align-items: center; justify-content: center;
   width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%;
   background: var(--primary); color: #fff; font-weight: 700; font-size: .95rem;
 }
-.admin-user-info { display: flex; flex-direction: column; line-height: 1.2; }
-.admin-user-name { color: var(--text); font-weight: 600; font-size: .9rem; }
-.admin-user-role { color: var(--muted); font-size: .75rem; }
+.admin-user-info { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+.admin-user-name { color: #fff; font-weight: 600; font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-user-role { color: #94a3b8; font-size: .75rem; }
 .admin-burger {
   display: none;
   border: 1px solid var(--border-strong);

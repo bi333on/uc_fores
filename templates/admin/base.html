@@ -94,6 +94,13 @@
       </span> 2FA
     </a>
     {% endif %}
+    <div class="admin-sidebar-user">
+      <span class="admin-user-avatar">{{ (admin_display_name or '?')[:1] }}</span>
+      <span class="admin-user-info">
+        <span class="admin-user-name">{{ admin_display_name or '—' }}</span>
+        <span class="admin-user-role">{{ 'Администратор' if admin_role == 'admin' else 'Редактор' }}</span>
+      </span>
+    </div>
   </nav>
   <div class="admin-sidebar-foot">
     <a href="{{ url_for('admin_logout') }}">
@@ -109,13 +116,6 @@
 <main class="admin-main" id="content">
   <header class="admin-header">
     <button class="admin-burger" id="admin-burger" type="button" aria-label="Меню">☰</button>
-    <div class="admin-header-user">
-      <span class="admin-user-avatar">{{ (admin_display_name or '?')[:1] }}</span>
-      <span class="admin-user-info">
-        <span class="admin-user-name">{{ admin_display_name or '—' }}</span>
-        <span class="admin-user-role">{{ 'Администратор' if admin_role == 'admin' else 'Редактор' }}</span>
-      </span>
-    </div>
   </header>
 
   {% with messages = get_flashed_messages(with_categories=true) %}
