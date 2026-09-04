@@ -176,6 +176,7 @@ EDITOR_SECTIONS = {
     "materials": "Документы",
     "tests": "Тесты",
     "results": "Результаты",
+    "employees": "Сотрудники",
     "2fa": "Двухфакторная аутентификация (2FA)",
 }
 
@@ -189,6 +190,9 @@ SECTION_ENDPOINTS = {
               "api_question_bulk", "api_option_create", "api_option_update",
               "api_option_delete", "api_question_image", "api_option_image"),
     "results": ("admin_results", "admin_results_export", "admin_result_print"),
+    "employees": ("admin_employees", "admin_employee_new", "admin_employee_edit",
+                  "admin_employee_import", "admin_employee_delete", "admin_employee_bulk",
+                  "admin_employee_import_preview", "admin_employee_import_run"),
     "2fa": ("admin_2fa_setup",),
 }
 
@@ -1432,7 +1436,7 @@ def api_option_image(option_id):
 # ---------------------------------------------------------------- admin: employees
 
 @app.route("/admin/employees/")
-@role_required("admin")
+@admin_required
 def admin_employees():
     q = (request.args.get("q") or "").strip()
     page = request.args.get("page", type=int) or 1
@@ -1455,13 +1459,13 @@ def admin_employees():
 
 
 @app.route("/admin/employees/new/", methods=["GET", "POST"])
-@role_required("admin")
+@admin_required
 def admin_employee_new():
     return _employee_form(None)
 
 
 @app.route("/admin/employees/<int:employee_id>/edit/", methods=["GET", "POST"])
-@role_required("admin")
+@admin_required
 def admin_employee_edit(employee_id):
     employee = Employee.query.get_or_404(employee_id)
     return _employee_form(employee)
@@ -1500,7 +1504,11 @@ def _employee_form(employee):
         employee.first_name = first_name
         employee.full_name = full_name
         role = (request.form.get("role") or "student").strip()
-        employee.role = role if role in ROLES else "student"
+        role = role if role in ROLES else "student"
+        # Редактор не может назначать роль «Администратор»
+        if current_admin_role() == "editor" and role == "admin":
+            role = "editor"
+        employee.role = role
         # Индивидуальные права редактора (галочки)
         if employee.role == "editor":
             perms = request.form.getlist("permissions")
@@ -1546,7 +1554,7 @@ def _employee_form(employee):
 
 
 @app.route("/admin/employees/import/", methods=["GET"])
-@role_required("admin")
+@admin_required
 def admin_employee_import():
     return render_template("admin/employee_import.html")
 
@@ -2037,7 +2045,7 @@ def _run_import_results(rows, value):
 
 
 @app.route("/admin/employees/<int:employee_id>/delete/", methods=["POST"])
-@role_required("admin")
+@admin_required
 def admin_employee_delete(employee_id):
     employee = Employee.query.get_or_404(employee_id)
     Attempt.query.filter_by(employee_id=employee.id).delete()
@@ -2048,7 +2056,7 @@ def admin_employee_delete(employee_id):
 
 
 @app.route("/admin/employees/bulk/", methods=["POST"])
-@role_required("admin")
+@admin_required
 def admin_employee_bulk():
     action = request.form.get("action")
     ids = request.form.getlist("ids")
@@ -2057,12 +2065,20 @@ def admin_employee_bulk():
         flash("Не выбрано ни одного сотрудника.", "warning")
         return redirect(url_for("admin_employees"))
 
+    is_editor = current_admin_role() == "editor"
+
     if action == "delete":
+        if is_editor:
+            flash("Редактор не может удалять сотрудников.", "danger")
+            return redirect(url_for("admin_employees"))
         Attempt.query.filter(Attempt.employee_id.in_(ids)).delete(synchronize_session=False)
         Employee.query.filter(Employee.id.in_(ids)).delete(synchronize_session=False)
         db.session.commit()
         flash(f"Удалено сотрудников: {len(ids)}.", "success")
     elif action in ROLES:
+        if is_editor and action == "admin":
+            flash("Редактор не может назначать роль «Администратор».", "danger")
+            return redirect(url_for("admin_employees"))
         Employee.query.filter(Employee.id.in_(ids)).update(
             {"role": action}, synchronize_session=False
         )

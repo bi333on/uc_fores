@@ -28,10 +28,14 @@
       <option value="">— действие —</option>
       <option value="student">Сделать учеником</option>
       <option value="editor">Сделать редактором</option>
+      {% if admin_role == 'admin' %}
       <option value="admin">Сделать администратором</option>
+      {% endif %}
       <option value="activate">Активировать</option>
       <option value="deactivate">Деактивировать</option>
+      {% if admin_role == 'admin' %}
       <option value="delete">Удалить</option>
+      {% endif %}
     </select>
     <button class="btn btn-outline" type="submit" id="bulk-btn">Применить</button>
   </div>

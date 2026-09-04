@@ -54,13 +54,15 @@
       </span> Тесты
     </a>
     {% endif %}
-    {% if admin_role == 'admin' %}
+    {% if admin_role == 'admin' or 'employees' in admin_sections %}
     <a href="{{ url_for('admin_employees') }}" class="{{ 'active' if ep in emp_endpoints }}"
        {% if ep in emp_endpoints %}aria-current="page"{% endif %}>
       <span class="nav-icon">
         <svg {{ icon_attrs|safe }}><path d="M16 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20"/><circle cx="9.5" cy="7.5" r="3.5"/><path d="M21 20v-1.5a4 4 0 0 0-3-3.87"/><path d="M16.5 4.13a3.5 3.5 0 0 1 0 6.74"/></svg>
       </span> Сотрудники
     </a>
+    {% endif %}
+    {% if admin_role == 'admin' %}
     <a href="{{ url_for('admin_smart_import') }}" class="{{ 'active' if ep in ['admin_smart_import'] }}"
        {% if ep in ['admin_smart_import'] %}aria-current="page"{% endif %}>
       <span class="nav-icon">

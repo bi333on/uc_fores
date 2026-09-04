@@ -26,9 +26,11 @@
       <label>Роль
         <select name="role" id="role-select">
           {% for r in ('student', 'editor', 'admin') %}
+            {% if admin_role != 'editor' or r != 'admin' %}
           <option value="{{ r }}" {% if employee and employee.role == r %}selected{% endif %}>
             {{ {'student': 'Ученик', 'editor': 'Редактор', 'admin': 'Администратор'}[r] }}
           </option>
+            {% endif %}
           {% endfor %}
         </select>
         <span class="input-hint">Редактор и администратор могут входить в админку.</span>
