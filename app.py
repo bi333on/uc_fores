@@ -79,12 +79,14 @@ SMART_IMPORT_TYPES = {
             ("last_name", "Фамилия", True),
             ("first_name", "Имя", True),
             ("password", "Пароль", False),
+            ("role", "Роль (ученик/редактор/администратор)", False),
         ],
         "keywords": {
             "employee_id": ["табельный", "employee_id", "employee", "таб. номер", "табномер", "номер", "id"],
             "last_name": ["фамилия", "last_name", "lastname", "surname"],
             "first_name": ["имя", "first_name", "firstname", "name"],
             "password": ["пароль", "password"],
+            "role": ["роль", "role"],
         },
         "has_test": False,
     },
@@ -160,16 +162,46 @@ def unauthorized():
 
 # ---------------------------------------------------------------- helpers
 
-def admin_required(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        if not session.get("admin_logged_in"):
-            if request.path.startswith("/admin/api/"):
-                return jsonify({"ok": False, "error": "Требуется вход администратора"}), 401
-            return redirect(url_for("admin_login"))
-        return f(*args, **kwargs)
+ROLES = ("student", "editor", "admin")
 
-    return wrapper
+ROLE_LABELS = {
+    "student": "Ученик",
+    "editor": "Редактор",
+    "admin": "Администратор",
+}
+
+
+def current_admin_role() -> str:
+    """Возвращает роль текущего админ-входа: 'admin' или 'editor'."""
+    if not session.get("admin_logged_in"):
+        return ""
+    return session.get("admin_role") or "admin"
+
+
+def role_required(*roles):
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            if not session.get("admin_logged_in"):
+                if request.path.startswith("/admin/api/"):
+                    return jsonify({"ok": False, "error": "Требуется вход администратора"}), 401
+                return redirect(url_for("admin_login"))
+            role = session.get("admin_role") or "admin"
+            if role not in roles:
+                if request.path.startswith("/admin/api/"):
+                    return jsonify({"ok": False, "error": "Недостаточно прав"}), 403
+                flash("Недостаточно прав для этого раздела.", "danger")
+                return redirect(url_for("admin_dashboard"))
+            return f(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+def admin_required(f):
+    """Доступ для редактора и администратора (контентные разделы)."""
+    return role_required("admin", "editor")(f)
 
 
 _TRANSLIT = {
@@ -417,6 +449,7 @@ def inject_globals():
         "site_name": get_setting("site_name", config.SITE_NAME),
         "site_url": config.SITE_URL,
         "now_year": datetime.now().year,
+        "admin_role": current_admin_role(),
     }
 
 
@@ -722,9 +755,23 @@ def admin_login():
         if admin and check_password_hash(admin.password_hash, password):
             if admin.totp_enabled:
                 session["admin_pending"] = admin.id
+                session["admin_pending_kind"] = "admin_user"
                 return redirect(url_for("admin_2fa"))
             session["admin_logged_in"] = True
             session["admin_id"] = admin.id
+            session["admin_role"] = "admin"
+            return redirect(url_for("admin_dashboard"))
+
+        # Вход сотрудника с ролью редактора/администратора
+        employee = Employee.query.filter_by(employee_id=username, is_active=True).first()
+        if (
+            employee
+            and employee.role in ("editor", "admin")
+            and check_password_hash(employee.password_hash, password)
+        ):
+            session["admin_logged_in"] = True
+            session["admin_id"] = employee.id
+            session["admin_role"] = employee.role
             return redirect(url_for("admin_dashboard"))
         error = "Неверный логин или пароль"
     return render_template("admin/login.html", error=error)
@@ -743,8 +790,10 @@ def admin_2fa():
         code = (request.form.get("code") or "").strip()
         if pyotp.TOTP(admin.totp_secret).verify(code, valid_window=1):
             session.pop("admin_pending", None)
+            session.pop("admin_pending_kind", None)
             session["admin_logged_in"] = True
             session["admin_id"] = admin.id
+            session["admin_role"] = "admin"
             return redirect(url_for("admin_dashboard"))
         error = "Неверный код"
     return render_template("admin/2fa.html", error=error)
@@ -777,7 +826,7 @@ def admin_dashboard():
 
 
 @app.route("/admin/update/", methods=["POST"])
-@admin_required
+@role_required("admin")
 def admin_update():
     branch = config.UPDATE_BRANCH
     lines = []
@@ -798,7 +847,7 @@ def admin_update():
 # ---------------------------------------------------------------- admin: 2FA setup
 
 @app.route("/admin/2fa/setup/", methods=["GET", "POST"])
-@admin_required
+@role_required("admin")
 def admin_2fa_setup():
     admin = db.session.get(AdminUser, session["admin_id"])
     if request.method == "POST":
@@ -1194,7 +1243,7 @@ def api_option_image(option_id):
 # ---------------------------------------------------------------- admin: employees
 
 @app.route("/admin/employees/")
-@admin_required
+@role_required("admin")
 def admin_employees():
     q = (request.args.get("q") or "").strip()
     page = request.args.get("page", type=int) or 1
@@ -1217,13 +1266,13 @@ def admin_employees():
 
 
 @app.route("/admin/employees/new/", methods=["GET", "POST"])
-@admin_required
+@role_required("admin")
 def admin_employee_new():
     return _employee_form(None)
 
 
 @app.route("/admin/employees/<int:employee_id>/edit/", methods=["GET", "POST"])
-@admin_required
+@role_required("admin")
 def admin_employee_edit(employee_id):
     employee = Employee.query.get_or_404(employee_id)
     return _employee_form(employee)
@@ -1261,6 +1310,8 @@ def _employee_form(employee):
         employee.last_name = last_name
         employee.first_name = first_name
         employee.full_name = full_name
+        role = (request.form.get("role") or "student").strip()
+        employee.role = role if role in ROLES else "student"
         password = (request.form.get("password") or "").strip()
         if password:
             employee.password_hash = generate_password_hash(password)
@@ -1288,7 +1339,7 @@ def _employee_form(employee):
 
 
 @app.route("/admin/employees/import/", methods=["GET"])
-@admin_required
+@role_required("admin")
 def admin_employee_import():
     return render_template("admin/employee_import.html")
 
@@ -1461,6 +1512,21 @@ def _smart_import_run(import_type):
 
 def _run_import_employees(rows, value):
     created = updated = skipped = 0
+
+    def parse_role(raw):
+        r = (raw or "").strip().lower()
+        mapping = {
+            "ученик": "student",
+            "тестируемый": "student",
+            "student": "student",
+            "редактор": "editor",
+            "editor": "editor",
+            "администратор": "admin",
+            "админ": "admin",
+            "admin": "admin",
+        }
+        return mapping.get(r, "student")
+
     for row in rows[1:]:
         if not row:
             continue
@@ -1474,11 +1540,13 @@ def _run_import_employees(rows, value):
         password = value(row, "password")
         if not password:
             password = config.EMPLOYEE_DEFAULT_PASSWORD
+        role = parse_role(value(row, "role"))
         existing = Employee.query.filter_by(employee_id=emp_id).first()
         if existing:
             existing.last_name = last_name
             existing.first_name = first_name
             existing.full_name = full_name
+            existing.role = role
             if password:
                 existing.password_hash = generate_password_hash(password)
             updated += 1
@@ -1489,6 +1557,7 @@ def _run_import_employees(rows, value):
                     last_name=last_name,
                     first_name=first_name,
                     full_name=full_name,
+                    role=role,
                     password_hash=generate_password_hash(password),
                 )
             )
@@ -1644,7 +1713,7 @@ def _run_import_results(rows, value):
 
 
 @app.route("/admin/employees/<int:employee_id>/delete/", methods=["POST"])
-@admin_required
+@role_required("admin")
 def admin_employee_delete(employee_id):
     employee = Employee.query.get_or_404(employee_id)
     Attempt.query.filter_by(employee_id=employee.id).delete()
@@ -1654,16 +1723,54 @@ def admin_employee_delete(employee_id):
     return redirect(url_for("admin_employees"))
 
 
+@app.route("/admin/employees/bulk/", methods=["POST"])
+@role_required("admin")
+def admin_employee_bulk():
+    action = request.form.get("action")
+    ids = request.form.getlist("ids")
+    ids = [int(i) for i in ids if i.isdigit()]
+    if not ids:
+        flash("Не выбрано ни одного сотрудника.", "warning")
+        return redirect(url_for("admin_employees"))
+
+    if action == "delete":
+        Attempt.query.filter(Attempt.employee_id.in_(ids)).delete(synchronize_session=False)
+        Employee.query.filter(Employee.id.in_(ids)).delete(synchronize_session=False)
+        db.session.commit()
+        flash(f"Удалено сотрудников: {len(ids)}.", "success")
+    elif action in ROLES:
+        Employee.query.filter(Employee.id.in_(ids)).update(
+            {"role": action}, synchronize_session=False
+        )
+        db.session.commit()
+        flash(f"Роль изменена на «{ROLE_LABELS[action]}» у {len(ids)} сотрудников.", "success")
+    elif action == "activate":
+        Employee.query.filter(Employee.id.in_(ids)).update(
+            {"is_active": True}, synchronize_session=False
+        )
+        db.session.commit()
+        flash(f"Активировано сотрудников: {len(ids)}.", "success")
+    elif action == "deactivate":
+        Employee.query.filter(Employee.id.in_(ids)).update(
+            {"is_active": False}, synchronize_session=False
+        )
+        db.session.commit()
+        flash(f"Деактивировано сотрудников: {len(ids)}.", "success")
+    else:
+        flash("Неизвестное действие.", "danger")
+    return redirect(url_for("admin_employees"))
+
+
 # ---------------------------------------------------------------- admin: smart import (CSV/Excel)
 
 @app.route("/admin/smart-import/")
-@admin_required
+@role_required("admin")
 def admin_smart_import():
     return render_template("admin/smart_import.html")
 
 
 @app.route("/admin/smart-import/preview/", methods=["POST"])
-@admin_required
+@role_required("admin")
 def admin_smart_import_preview():
     import_type = (request.form.get("type") or "").strip()
     if import_type not in SMART_IMPORT_TYPES:
@@ -1672,7 +1779,7 @@ def admin_smart_import_preview():
 
 
 @app.route("/admin/smart-import/run/", methods=["POST"])
-@admin_required
+@role_required("admin")
 def admin_smart_import_run():
     payload = request.get_json(silent=True) or {}
     import_type = (payload.get("type") or request.form.get("type") or "").strip()
@@ -1774,7 +1881,7 @@ def admin_result_print(attempt_id):
 # ---------------------------------------------------------------- admin: WP import
 
 @app.route("/admin/import/")
-@admin_required
+@role_required("admin")
 def admin_import():
     import wp_import
 
@@ -1784,7 +1891,7 @@ def admin_import():
 
 
 @app.route("/admin/import/settings/", methods=["POST"])
-@admin_required
+@role_required("admin")
 def admin_import_settings():
     import wp_import
 
@@ -1803,7 +1910,7 @@ def _run_import(func, *args):
 
 
 @app.route("/admin/import/check/", methods=["POST"])
-@admin_required
+@role_required("admin")
 def admin_import_check():
     import wp_import
 
@@ -1822,7 +1929,7 @@ def admin_import_check():
 
 
 @app.route("/admin/import/users/", methods=["POST"])
-@admin_required
+@role_required("admin")
 def admin_import_users():
     import wp_import
 
@@ -1831,7 +1938,7 @@ def admin_import_users():
 
 
 @app.route("/admin/import/quizzes/", methods=["POST"])
-@admin_required
+@role_required("admin")
 def admin_import_quizzes():
     import wp_import
 
@@ -1840,7 +1947,7 @@ def admin_import_quizzes():
 
 
 @app.route("/admin/import/results/", methods=["POST"])
-@admin_required
+@role_required("admin")
 def admin_import_results():
     import wp_import
 
@@ -1849,7 +1956,7 @@ def admin_import_results():
 
 
 @app.route("/admin/import/documents/", methods=["POST"])
-@admin_required
+@role_required("admin")
 def admin_import_documents():
     import wp_import
 
@@ -1861,7 +1968,7 @@ def admin_import_documents():
 
 
 @app.route("/admin/import/dump/", methods=["POST"])
-@admin_required
+@role_required("admin")
 def admin_import_dump():
     import wp_import
 
@@ -1892,7 +1999,7 @@ def admin_import_dump():
 # ---------------------------------------------------------------- admin: settings
 
 @app.route("/admin/settings/", methods=["GET", "POST"])
-@admin_required
+@role_required("admin")
 def admin_settings():
     if request.method == "POST":
         for key in ("site_name", "cert_org_name", "cert_signature"):

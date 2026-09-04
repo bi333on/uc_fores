@@ -48,6 +48,7 @@
         <svg {{ icon_attrs|safe }}><path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1z"/><path d="M16 6h2a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2"/><path d="M9 13.5l2 2 4-4"/></svg>
       </span> Тесты
     </a>
+    {% if admin_role == 'admin' %}
     <a href="{{ url_for('admin_employees') }}" class="{{ 'active' if ep in emp_endpoints }}"
        {% if ep in emp_endpoints %}aria-current="page"{% endif %}>
       <span class="nav-icon">
@@ -66,12 +67,14 @@
         <svg {{ icon_attrs|safe }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 3v12"/></svg>
       </span> Импорт WP
     </a>
+    {% endif %}
     <a href="{{ url_for('admin_results') }}" class="{{ 'active' if ep in res_endpoints }}"
        {% if ep in res_endpoints %}aria-current="page"{% endif %}>
       <span class="nav-icon">
         <svg {{ icon_attrs|safe }}><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg>
       </span> Результаты
     </a>
+    {% if admin_role == 'admin' %}
     <a href="{{ url_for('admin_settings') }}" class="{{ 'active' if ep == 'admin_settings' }}"
        {% if ep == 'admin_settings' %}aria-current="page"{% endif %}>
       <span class="nav-icon">
@@ -84,6 +87,7 @@
         <svg {{ icon_attrs|safe }}><path d="M12 3l7 3v5.5c0 4.2-2.9 8.1-7 9.5-4.1-1.4-7-5.3-7-9.5V6z"/><path d="M9.5 12l1.8 1.8 3.4-3.6"/></svg>
       </span> 2FA
     </a>
+    {% endif %}
   </nav>
   <div class="admin-sidebar-foot">
     <a href="{{ url_for('admin_logout') }}">
@@ -98,7 +102,7 @@
 
 <main class="admin-main" id="content">
   <div class="admin-topbar">
-    <span class="muted">{{ site_name }} · Администрирование</span>
+    <span class="muted">{{ site_name }} · Администрирование · {{ 'Администратор' if admin_role == 'admin' else 'Редактор' }}</span>
     <button class="admin-burger" id="admin-burger" type="button" aria-label="Меню">☰</button>
   </div>
 

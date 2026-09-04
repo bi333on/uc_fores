@@ -1013,6 +1013,12 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .page-ellipsis { color: var(--muted); padding: 0 2px; }
 .pagination-info { color: var(--muted); font-size: .85rem; margin-bottom: 8px; }
 
+/* ---------- bulk actions ---------- */
+.bulk-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 10px 0; padding: 10px 14px; background: #fff; border: 1px solid var(--border); border-radius: 8px; }
+.bulk-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.bulk-actions select { width: auto; margin-top: 0; }
+.bulk-bar label.checkbox { margin: 0; }
+
 /* ---------- 404 ---------- */
 .notfound { text-align: center; padding: 60px 0; }
 .notfound .code { font-size: 6rem; font-weight: 800; line-height: 1; color: var(--border-strong); letter-spacing: -.03em; }

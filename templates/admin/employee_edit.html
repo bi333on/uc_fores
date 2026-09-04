@@ -23,6 +23,16 @@
       <label>Имя
         <input type="text" name="first_name" value="{{ first_name if first_name is defined else '' }}" required>
       </label>
+      <label>Роль
+        <select name="role">
+          {% for r in ('student', 'editor', 'admin') %}
+          <option value="{{ r }}" {% if employee and employee.role == r %}selected{% endif %}>
+            {{ {'student': 'Ученик', 'editor': 'Редактор', 'admin': 'Администратор'}[r] }}
+          </option>
+          {% endfor %}
+        </select>
+        <span class="input-hint">Редактор и администратор могут входить в админку.</span>
+      </label>
       <label>Пароль
         <input type="text" name="password" id="password" {% if not employee %}required{% endif %} autocomplete="off">
         <span class="input-hint">

@@ -19,14 +19,37 @@
 </form>
 
 {% if employees %}
+<form method="post" action="{{ url_for('admin_employee_bulk') }}" id="bulk-form">
+<div class="bulk-bar">
+  <label class="checkbox"><input type="checkbox" id="check-all"> Выбрать всех на странице</label>
+  <div class="bulk-actions">
+    <span class="muted">С выбранными:</span>
+    <select name="action" id="bulk-action">
+      <option value="">— действие —</option>
+      <option value="student">Сделать учеником</option>
+      <option value="editor">Сделать редактором</option>
+      <option value="admin">Сделать администратором</option>
+      <option value="activate">Активировать</option>
+      <option value="deactivate">Деактивировать</option>
+      <option value="delete">Удалить</option>
+    </select>
+    <button class="btn btn-outline" type="submit" id="bulk-btn">Применить</button>
+  </div>
+</div>
 <div class="table-wrap">
 <table class="table">
-  <thead><tr><th>Табельный</th><th>Фамилия Имя</th><th>Активен</th><th>Вход</th><th></th></tr></thead>
+  <thead><tr><th></th><th>Табельный</th><th>Фамилия Имя</th><th>Роль</th><th>Активен</th><th>Вход</th><th></th></tr></thead>
   <tbody>
     {% for e in employees %}
     <tr>
+      <td><input type="checkbox" name="ids" value="{{ e.id }}" class="row-check"></td>
       <td><code>{{ e.employee_id }}</code></td>
       <td>{{ e.full_name }}</td>
+      <td>
+        {% if e.role == 'admin' %}<span class="chip chip-red">Администратор</span>
+        {% elif e.role == 'editor' %}<span class="chip chip-blue">Редактор</span>
+        {% else %}<span class="chip chip-gray">Ученик</span>{% endif %}
+      </td>
       <td>{% if e.is_active %}<span class="chip chip-green">✓ да</span>{% else %}<span class="chip chip-gray">нет</span>{% endif %}</td>
       <td>{{ e.last_login|dt if e.last_login else '—' }}</td>
       <td class="row-actions">
@@ -40,10 +63,32 @@
   </tbody>
 </table>
 </div>
+</form>
 {% else %}
 <div class="empty">Сотрудников нет.</div>
 {% endif %}
 
 {% from "admin/_pagination.html" import pagination %}
 {{ pagination(page, pages, total, 'admin_employees', q=(q if q else None)) }}
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var all = document.getElementById('check-all');
+  var form = document.getElementById('bulk-form');
+  if (all) {
+    all.addEventListener('change', function () {
+      form.querySelectorAll('.row-check').forEach(function (c) { c.checked = all.checked; });
+    });
+  }
+  form.addEventListener('submit', function (e) {
+    var action = document.getElementById('bulk-action').value;
+    if (!action) { e.preventDefault(); alert('Выберите действие'); return; }
+    if (action === 'delete' && !confirm('Удалить выбранных сотрудников и их результаты?')) {
+      e.preventDefault();
+    }
+  });
+})();
+</script>
 {% endblock %}

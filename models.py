@@ -18,6 +18,7 @@ class Employee(UserMixin, db.Model):
     full_name = db.Column(db.String(255), nullable=False)
     last_name = db.Column(db.String(255), nullable=True)
     first_name = db.Column(db.String(255), nullable=True)
+    role = db.Column(db.String(20), default="student", nullable=False)  # student | editor | admin
     password_hash = db.Column(db.String(255), nullable=False)
     must_change_password = db.Column(db.Boolean, default=False)
     is_active = db.Column(db.Boolean, default=True)
