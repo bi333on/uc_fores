@@ -89,13 +89,13 @@
         <svg {{ icon_attrs|safe }}><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/><circle cx="9" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="8" cy="18" r="2"/></svg>
       </span> Настройки
     </a>
+    {% endif %}
     <a href="{{ url_for('admin_2fa_setup') }}" class="{{ 'active' if ep == 'admin_2fa_setup' }}"
        {% if ep == 'admin_2fa_setup' %}aria-current="page"{% endif %}>
       <span class="nav-icon">
         <svg {{ icon_attrs|safe }}><path d="M12 3l7 3v5.5c0 4.2-2.9 8.1-7 9.5-4.1-1.4-7-5.3-7-9.5V6z"/><path d="M9.5 12l1.8 1.8 3.4-3.6"/></svg>
       </span> 2FA
     </a>
-    {% endif %}
   </nav>
   <div class="admin-sidebar-foot">
     <a href="{{ url_for('admin_logout') }}">

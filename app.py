@@ -805,6 +805,7 @@ def admin_login():
             session["admin_logged_in"] = True
             session["admin_id"] = admin.id
             session["admin_role"] = "admin"
+            session["admin_kind"] = "admin_user"
             return redirect(url_for("admin_dashboard"))
 
         # Вход сотрудника с ролью редактора/администратора
@@ -814,9 +815,14 @@ def admin_login():
             and employee.role in ("editor", "admin")
             and check_password_hash(employee.password_hash, password)
         ):
+            if employee.totp_enabled and employee.totp_secret:
+                session["admin_pending"] = employee.id
+                session["admin_pending_kind"] = "employee"
+                return redirect(url_for("admin_2fa"))
             session["admin_logged_in"] = True
             session["admin_id"] = employee.id
             session["admin_role"] = employee.role
+            session["admin_kind"] = "employee"
             if employee.role == "editor":
                 try:
                     perms = json.loads(employee.permissions or "[]")
@@ -833,18 +839,39 @@ def admin_2fa():
     pending_id = session.get("admin_pending")
     if not pending_id:
         return redirect(url_for("admin_login"))
-    admin = db.session.get(AdminUser, pending_id)
-    if not admin:
+    kind = session.get("admin_pending_kind") or "admin_user"
+
+    if kind == "employee":
+        employee = db.session.get(Employee, pending_id)
+        secret = employee.totp_secret if employee else None
+    else:
+        admin = db.session.get(AdminUser, pending_id)
+        secret = admin.totp_secret if admin else None
+    if not secret:
         return redirect(url_for("admin_login"))
+
     error = None
     if request.method == "POST":
         code = (request.form.get("code") or "").strip()
-        if pyotp.TOTP(admin.totp_secret).verify(code, valid_window=1):
+        if pyotp.TOTP(secret).verify(code, valid_window=1):
             session.pop("admin_pending", None)
             session.pop("admin_pending_kind", None)
             session["admin_logged_in"] = True
-            session["admin_id"] = admin.id
-            session["admin_role"] = "admin"
+            if kind == "employee":
+                employee = db.session.get(Employee, pending_id)
+                session["admin_id"] = employee.id
+                session["admin_role"] = employee.role
+                session["admin_kind"] = "employee"
+                if employee.role == "editor":
+                    try:
+                        perms = json.loads(employee.permissions or "[]")
+                        session["admin_sections"] = [p for p in perms if p in EDITOR_SECTIONS]
+                    except Exception:  # noqa: BLE001
+                        session["admin_sections"] = []
+            else:
+                session["admin_id"] = pending_id
+                session["admin_role"] = "admin"
+                session["admin_kind"] = "admin_user"
             return redirect(url_for("admin_dashboard"))
         error = "Неверный код"
     return render_template("admin/2fa.html", error=error)
@@ -898,35 +925,46 @@ def admin_update():
 # ---------------------------------------------------------------- admin: 2FA setup
 
 @app.route("/admin/2fa/setup/", methods=["GET", "POST"])
-@role_required("admin")
+@admin_required
 def admin_2fa_setup():
-    admin = db.session.get(AdminUser, session["admin_id"])
+    kind = session.get("admin_kind") or "admin_user"
+    if kind == "employee":
+        account = db.session.get(Employee, session["admin_id"])
+        account_name = account.employee_id if account else ""
+    else:
+        account = db.session.get(AdminUser, session["admin_id"])
+        account_name = account.username if account else ""
+
+    if account is None:
+        flash("Учётная запись не найдена.", "danger")
+        return redirect(url_for("admin_dashboard"))
+
     if request.method == "POST":
         action = request.form.get("action")
         if action == "enable":
             code = (request.form.get("code") or "").strip()
-            if pyotp.TOTP(admin.totp_secret).verify(code, valid_window=1):
-                admin.totp_enabled = True
+            if account.totp_secret and pyotp.TOTP(account.totp_secret).verify(code, valid_window=1):
+                account.totp_enabled = True
                 db.session.commit()
                 flash("Двухфакторная аутентификация включена.", "success")
                 return redirect(url_for("admin_dashboard"))
             flash("Неверный код, попробуйте ещё раз.", "danger")
         elif action == "disable":
-            admin.totp_enabled = False
-            admin.totp_secret = None
+            account.totp_enabled = False
+            account.totp_secret = None
             db.session.commit()
             flash("Двухфакторная аутентификация отключена.", "success")
             return redirect(url_for("admin_dashboard"))
-    if not admin.totp_secret:
-        admin.totp_secret = pyotp.random_base32()
+    if not account.totp_secret:
+        account.totp_secret = pyotp.random_base32()
         db.session.commit()
-    otp = pyotp.TOTP(admin.totp_secret)
-    uri = otp.provisioning_uri(name=admin.username, issuer_name="UC-Fores")
+    otp = pyotp.TOTP(account.totp_secret)
+    uri = otp.provisioning_uri(name=account_name, issuer_name="UC-Fores")
     qr_img = qrcode.make(uri)
     buf = io.BytesIO()
     qr_img.save(buf, format="PNG")
     qr_b64 = base64.b64encode(buf.getvalue()).decode()
-    return render_template("admin/2fa_setup.html", qr=qr_b64, secret=admin.totp_secret)
+    return render_template("admin/2fa_setup.html", qr=qr_b64, secret=account.totp_secret)
 
 
 # ---------------------------------------------------------------- admin: categories

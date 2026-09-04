@@ -20,6 +20,8 @@ class Employee(UserMixin, db.Model):
     first_name = db.Column(db.String(255), nullable=True)
     role = db.Column(db.String(20), default="student", nullable=False)  # student | editor | admin
     permissions = db.Column(db.Text, default="[]")  # JSON-список разделов для редактора
+    totp_secret = db.Column(db.String(64), nullable=True)
+    totp_enabled = db.Column(db.Boolean, default=False)
     password_hash = db.Column(db.String(255), nullable=False)
     must_change_password = db.Column(db.Boolean, default=False)
     is_active = db.Column(db.Boolean, default=True)
