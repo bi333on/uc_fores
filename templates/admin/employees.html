@@ -4,7 +4,7 @@
 <div class="page-head">
   <div class="page-head-title">
     <h1>Сотрудники</h1>
-    <p class="muted small">Всего: {{ employees|length }}{% if q %} · по запросу «{{ q }}»{% endif %}</p>
+    <p class="muted small">Всего: {{ total }}{% if q %} · по запросу «{{ q }}»{% endif %}</p>
   </div>
   <div class="page-head-actions">
     <a class="btn btn-outline" href="{{ url_for('admin_smart_import') }}">Импорт CSV/Excel</a>
@@ -43,4 +43,7 @@
 {% else %}
 <div class="empty">Сотрудников нет.</div>
 {% endif %}
+
+{% from "admin/_pagination.html" import pagination %}
+{{ pagination(page, pages, total, 'admin_employees', q=q) }}
 {% endblock %}

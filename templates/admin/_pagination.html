@@ -1,0 +1,29 @@
+{% macro pagination(page, pages, total, endpoint, **filters) %}
+{% if pages > 1 %}
+<nav class="pagination" aria-label="Пагинация">
+  <a class="page-link {{ 'disabled' if page <= 1 else '' }}"
+     href="{{ url_for(endpoint, page=page-1, **filters) if page > 1 else '#' }}">← Назад</a>
+
+  {% set start = [1, page - 2] | max %}
+  {% set end = [pages, page + 2] | min %}
+  {% if start > 1 %}
+    <a class="page-link" href="{{ url_for(endpoint, page=1, **filters) }}">1</a>
+    {% if start > 2 %}<span class="page-ellipsis">…</span>{% endif %}
+  {% endif %}
+
+  {% for p in range(start, end + 1) %}
+    <a class="page-link {{ 'active' if p == page else '' }}"
+       href="{{ url_for(endpoint, page=p, **filters) }}">{{ p }}</a>
+  {% endfor %}
+
+  {% if end < pages %}
+    {% if end < pages - 1 %}<span class="page-ellipsis">…</span>{% endif %}
+    <a class="page-link" href="{{ url_for(endpoint, page=pages, **filters) }}">{{ pages }}</a>
+  {% endif %}
+
+  <a class="page-link {{ 'disabled' if page >= pages else '' }}"
+     href="{{ url_for(endpoint, page=page+1, **filters) if page < pages else '#' }}">Вперёд →</a>
+</nav>
+<div class="pagination-info">Показано записей: {{ total }}</div>
+{% endif %}
+{% endmacro %}

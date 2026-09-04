@@ -4,7 +4,7 @@
 <div class="page-head">
   <div class="page-head-title">
     <h1>Журнал результатов</h1>
-    <p class="muted small">Показано записей: {{ attempts|length }}</p>
+    <p class="muted small">Всего записей: {{ total }}</p>
   </div>
   <div class="page-head-actions">
     <a class="btn btn-outline" href="{{ url_for('admin_results_export') }}">Экспорт CSV</a>
@@ -61,4 +61,8 @@
 {% else %}
 <div class="empty">Результатов нет.</div>
 {% endif %}
+
+{% from "admin/_pagination.html" import pagination %}
+{{ pagination(page, pages, total, 'admin_results',
+   category_id=filters.category_id, test_id=filters.test_id, employee_id=filters.employee_id) }}
 {% endblock %}

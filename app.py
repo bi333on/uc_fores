@@ -223,6 +223,23 @@ def set_setting(key: str, value: str) -> None:
         s.value = value
 
 
+def paginate_query(query, page: int, per_page: int = 25):
+    """Возвращает (страницу элементов, total, pages, page, per_page)."""
+    page = max(1, page or 1)
+    per_page = max(1, per_page)
+    total = query.count()
+    pages = max(1, (total + per_page - 1) // per_page)
+    page = min(page, pages)
+    items = query.offset((page - 1) * per_page).limit(per_page).all()
+    return items, total, pages, page, per_page
+
+
+def pagination_url(endpoint: str, page: int, **extra):
+    args = {k: v for k, v in extra.items() if v not in (None, "")}
+    args["page"] = page
+    return url_for(endpoint, **args)
+
+
 def save_upload(file_storage, subdir: str, allowed_exts: set):
     """Сохраняет файл в uploads/<subdir>/, возвращает (относительный путь, ошибка)."""
     if not file_storage or not file_storage.filename:
@@ -1180,14 +1197,23 @@ def api_option_image(option_id):
 @admin_required
 def admin_employees():
     q = (request.args.get("q") or "").strip()
+    page = request.args.get("page", type=int) or 1
     query = Employee.query
     if q:
         like = f"%{q}%"
         query = query.filter(
             db.or_(Employee.employee_id.ilike(like), Employee.full_name.ilike(like))
         )
-    employees = query.order_by(Employee.id).all()
-    return render_template("admin/employees.html", employees=employees, q=q)
+    query = query.order_by(Employee.id)
+    employees, total, pages, page, per_page = paginate_query(query, page)
+    return render_template(
+        "admin/employees.html",
+        employees=employees,
+        q=q,
+        page=page,
+        pages=pages,
+        total=total,
+    )
 
 
 @app.route("/admin/employees/new/", methods=["GET", "POST"])
@@ -1663,6 +1689,7 @@ def admin_results():
     category_id = request.args.get("category_id", type=int)
     test_id = request.args.get("test_id", type=int)
     employee_id = request.args.get("employee_id", type=int)
+    page = request.args.get("page", type=int) or 1
 
     query = Attempt.query.filter_by(status="finished").join(Test)
     if category_id:
@@ -1672,7 +1699,8 @@ def admin_results():
     if employee_id:
         query = query.filter(Attempt.employee_id == employee_id)
 
-    attempts = query.order_by(Attempt.finished_at.desc()).limit(500).all()
+    query = query.order_by(Attempt.finished_at.desc())
+    attempts, total, pages, page, per_page = paginate_query(query, page, per_page=50)
     categories = Category.query.order_by(Category.sort_order).all()
     tests = Test.query.order_by(Test.category_id, Test.id).all()
     employees = Employee.query.order_by(Employee.id).all()
@@ -1683,6 +1711,9 @@ def admin_results():
         tests=tests,
         employees=employees,
         filters={"category_id": category_id, "test_id": test_id, "employee_id": employee_id},
+        page=page,
+        pages=pages,
+        total=total,
     )
 
 

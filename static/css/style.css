@@ -999,6 +999,20 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .dump-checks { display: flex; gap: 18px; flex-wrap: wrap; margin: 10px 0; }
 .dump-checks label.checkbox { margin: 0; }
 
+/* ---------- pagination ---------- */
+.pagination { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 18px 0 6px; }
+.page-link {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 34px; height: 34px; padding: 0 10px;
+  border: 1px solid var(--border); border-radius: 6px; background: #fff;
+  color: var(--text); font-size: .9rem; text-decoration: none;
+}
+.page-link:hover { background: var(--primary-soft); border-color: var(--primary); }
+.page-link.active { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
+.page-link.disabled { opacity: .45; pointer-events: none; }
+.page-ellipsis { color: var(--muted); padding: 0 2px; }
+.pagination-info { color: var(--muted); font-size: .85rem; margin-bottom: 8px; }
+
 /* ---------- 404 ---------- */
 .notfound { text-align: center; padding: 60px 0; }
 .notfound .code { font-size: 6rem; font-weight: 800; line-height: 1; color: var(--border-strong); letter-spacing: -.03em; }
