@@ -90,12 +90,14 @@
       </span> Настройки
     </a>
     {% endif %}
+    {% if admin_role == 'admin' or '2fa' in admin_sections %}
     <a href="{{ url_for('admin_2fa_setup') }}" class="{{ 'active' if ep == 'admin_2fa_setup' }}"
        {% if ep == 'admin_2fa_setup' %}aria-current="page"{% endif %}>
       <span class="nav-icon">
         <svg {{ icon_attrs|safe }}><path d="M12 3l7 3v5.5c0 4.2-2.9 8.1-7 9.5-4.1-1.4-7-5.3-7-9.5V6z"/><path d="M9.5 12l1.8 1.8 3.4-3.6"/></svg>
       </span> 2FA
     </a>
+    {% endif %}
   </nav>
   <div class="admin-sidebar-foot">
     <a href="{{ url_for('admin_logout') }}">

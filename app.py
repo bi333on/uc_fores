@@ -176,6 +176,7 @@ EDITOR_SECTIONS = {
     "materials": "Документы",
     "tests": "Тесты",
     "results": "Результаты",
+    "2fa": "Двухфакторная аутентификация (2FA)",
 }
 
 # Маппинг раздела -> префиксы endpoint'ов, которые к нему относятся.
@@ -188,6 +189,7 @@ SECTION_ENDPOINTS = {
               "api_question_bulk", "api_option_create", "api_option_update",
               "api_option_delete", "api_question_image", "api_option_image"),
     "results": ("admin_results", "admin_results_export", "admin_result_print"),
+    "2fa": ("admin_2fa_setup",),
 }
 
 
