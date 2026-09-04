@@ -738,6 +738,16 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .admin-sidebar-foot a { color: #94a3b8; }
 .admin-sidebar-foot a:hover { background: rgba(220,38,38,.25); color: #fff; }
 
+.admin-user { display: flex; align-items: center; gap: 10px; padding: 8px 10px; margin-bottom: 8px; border-radius: 8px; background: rgba(255,255,255,.06); }
+.admin-user-avatar {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; flex-shrink: 0; border-radius: 50%;
+  background: var(--primary); color: #fff; font-weight: 700; font-size: .95rem;
+}
+.admin-user-info { display: flex; flex-direction: column; min-width: 0; }
+.admin-user-name { color: #fff; font-weight: 600; font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-user-role { color: #94a3b8; font-size: .75rem; }
+
 .admin-main { flex: 1; padding: 24px 28px 48px; max-width: 1120px; min-width: 0; }
 .admin-login { max-width: 380px; }
 

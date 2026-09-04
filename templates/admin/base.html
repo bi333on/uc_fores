@@ -96,6 +96,15 @@
     {% endif %}
   </nav>
   <div class="admin-sidebar-foot">
+    {% if admin_display_name %}
+    <div class="admin-user">
+      <span class="admin-user-avatar">{{ admin_display_name[:1] }}</span>
+      <span class="admin-user-info">
+        <span class="admin-user-name">{{ admin_display_name }}</span>
+        <span class="admin-user-role">{{ 'Администратор' if admin_role == 'admin' else 'Редактор' }}</span>
+      </span>
+    </div>
+    {% endif %}
     <a href="{{ url_for('admin_logout') }}">
       <span class="nav-icon">
         <svg {{ icon_attrs|safe }}><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/><path d="M12 20H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6"/></svg>
