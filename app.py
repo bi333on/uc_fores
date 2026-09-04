@@ -1397,6 +1397,78 @@ def _parse_import_bytes(data: bytes, ext: str):
     ]
 
 
+def _is_qsm_long_format(rows):
+    """Определяет длинный формат QSM: колонки Item Type / Question Title / Answer Text."""
+    if len(rows) < 2:
+        return False
+    header = [str(h).strip().lower() for h in rows[0]]
+    return "item type" in header and "question title" in header
+
+
+def _qsm_long_to_rows(rows):
+    """Преобразует длинный формат QSM (строки Question/Answer) в широкий:
+    одна строка = один вопрос, варианты — отдельные колонки answer_1..answer_N, correct — номера."""
+    header = [str(h).strip() for h in rows[0]]
+    idx = {h.lower(): i for i, h in enumerate(header)}
+
+    def get(row, name):
+        i = idx.get(name)
+        return str(row[i]).strip() if i is not None and i < len(row) else ""
+
+    out_header = ["Вопрос", "Тип", "Вариант 1", "Вариант 2", "Вариант 3",
+                  "Вариант 4", "Вариант 5", "Вариант 6", "Правильные"]
+    out = [out_header]
+
+    current = None
+    answers = []
+    correct = []
+    order = 0
+
+    def flush():
+        nonlocal current, answers, correct, order
+        if current is not None:
+            row = [current["text"], current["type"]]
+            row += answers[:6] + [""] * (6 - len(answers[:6]))
+            row.append(",".join(str(c) for c in correct))
+            out.append(row)
+        current = None
+        answers = []
+        correct = []
+
+    for raw in rows[1:]:
+        if not raw:
+            continue
+        item_type = get(raw, "item type").lower()
+        if item_type == "question":
+            flush()
+            current = {
+                "text": get(raw, "question title"),
+                "type": "single",
+            }
+            qtype = get(raw, "question type new")
+            if qtype.lower() in ("multiple", "multi", "14", "4"):
+                current["type"] = "multiple"
+            # Ответы, отмеченные точками/цифрами в Question Answer Info (может отсутствовать)
+            info = get(raw, "question answer info")
+            if info and info.isdigit():
+                correct = [int(info)]
+        elif item_type == "answer":
+            if current is not None:
+                answers.append(get(raw, "answer text"))
+                is_correct = get(raw, "answer correct/incorrect")
+                if is_correct in ("1", "true", "yes"):
+                    correct.append(len(answers))  # номер варианта (1-based)
+    flush()
+    return out
+
+
+def _normalize_questions_rows(rows):
+    """Если файл в длинном формате QSM, преобразует в широкий формат."""
+    if _is_qsm_long_format(rows):
+        return _qsm_long_to_rows(rows)
+    return rows
+
+
 def _guess_mapping(header):
     """Автоподбор: возвращает имя колонки (или None) для каждого поля сотрудников."""
     return _smart_guess(header, SMART_IMPORT_TYPES["employees"])
@@ -1463,6 +1535,10 @@ def _smart_import_preview(import_type):
     if not rows:
         return jsonify({"ok": False, "error": "Файл пустой"})
 
+    # Если вопросы импортируются из длинного формата QSM — преобразуем заранее.
+    if import_type == "questions":
+        rows = _normalize_questions_rows(rows)
+
     header = [str(h).strip() for h in rows[0]]
     if not any(header):
         return jsonify({"ok": False, "error": "Не найдена строка заголовков"})
@@ -1470,15 +1546,17 @@ def _smart_import_preview(import_type):
     token = secrets.token_hex(16)
     tmpdir = os.path.join(UPLOAD_DIR, "tmp")
     os.makedirs(tmpdir, exist_ok=True)
-    with open(os.path.join(tmpdir, f"{token}{ext}"), "wb") as fh:
-        fh.write(data)
+    with open(os.path.join(tmpdir, f"{token}.csv"), "wb") as fh:
+        buf = io.StringIO()
+        csv.writer(buf).writerows(rows)
+        fh.write(buf.getvalue().encode("utf-8-sig"))
 
     preview = rows[1:6]
     return jsonify(
         {
             "ok": True,
             "token": token,
-            "ext": ext,
+            "ext": ".csv",
             "type": import_type,
             "columns": header,
             "preview": preview,
@@ -1504,16 +1582,16 @@ def _smart_import_run(import_type):
     mapping = payload.get("mapping") or {}
     test_id = payload.get("test_id")
 
-    if not token or ext not in IMPORT_EXTS:
+    if not token:
         return jsonify({"ok": False, "error": "Неверный запрос"})
 
-    path = os.path.join(UPLOAD_DIR, "tmp", f"{token}{ext}")
+    path = os.path.join(UPLOAD_DIR, "tmp", f"{token}.csv")
     if not os.path.exists(path):
         return jsonify({"ok": False, "error": "Файл не найден — загрузите заново"})
 
     try:
         with open(path, "rb") as fh:
-            rows = _parse_import_bytes(fh.read(), ext)
+            rows = _parse_import_bytes(fh.read(), ".csv")
     except Exception as exc:  # noqa: BLE001
         return jsonify({"ok": False, "error": f"Ошибка чтения файла: {exc}"})
     finally:
