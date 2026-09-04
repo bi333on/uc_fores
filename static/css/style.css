@@ -1023,6 +1023,10 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .bulk-actions select { width: auto; margin-top: 0; }
 .bulk-bar label.checkbox { margin: 0; }
 
+/* ---------- danger zone ---------- */
+.danger-zone { border: 1px solid #feb2b2; background: #fff5f5; }
+.danger-zone h2 { color: #822727; }
+
 /* ---------- 404 ---------- */
 .notfound { text-align: center; padding: 60px 0; }
 .notfound .code { font-size: 6rem; font-weight: 800; line-height: 1; color: var(--border-strong); letter-spacing: -.03em; }

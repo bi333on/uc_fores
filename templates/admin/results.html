@@ -62,7 +62,59 @@
 <div class="empty">Результатов нет.</div>
 {% endif %}
 
+{% if admin_role == 'admin' %}
+<div class="panel danger-zone">
+  <h2>Очистка результатов</h2>
+  <p class="muted small">Удаление результатов тестирования из базы. Доступно только администраторам.</p>
+  <form method="post" action="{{ url_for('admin_results_clear') }}" onsubmit="return confirmClear(this);">
+    <div class="bulk-actions">
+      <select name="scope" id="clear-scope">
+        <option value="all">Все результаты</option>
+        <option value="test">По конкретному тесту</option>
+        <option value="employee">По конкретному сотруднику</option>
+      </select>
+      <select name="test_id" id="clear-test" style="display:none">
+        <option value="">— выберите тест —</option>
+        {% for t in tests %}
+        <option value="{{ t.id }}">{{ t.title }}</option>
+        {% endfor %}
+      </select>
+      <select name="employee_id" id="clear-employee" style="display:none">
+        <option value="">— выберите сотрудника —</option>
+        {% for e in employees %}
+        <option value="{{ e.id }}">{{ e.full_name }} ({{ e.employee_id }})</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-danger" type="submit">Очистить</button>
+    </div>
+  </form>
+</div>
+{% endif %}
+
 {% from "admin/_pagination.html" import pagination %}
 {{ pagination(page, pages, total, 'admin_results',
    category_id=filters.category_id, test_id=filters.test_id, employee_id=filters.employee_id) }}
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var scope = document.getElementById('clear-scope');
+  var testSel = document.getElementById('clear-test');
+  var empSel = document.getElementById('clear-employee');
+  function update() {
+    testSel.style.display = scope.value === 'test' ? '' : 'none';
+    empSel.style.display = scope.value === 'employee' ? '' : 'none';
+  }
+  if (scope) {
+    scope.addEventListener('change', update);
+    update();
+  }
+  window.confirmClear = function (form) {
+    var s = scope ? scope.value : 'all';
+    if (s === 'all') return confirm('Удалить ВСЕ результаты тестирования? Действие необратимо.');
+    return confirm('Удалить выбранные результаты? Действие необратимо.');
+  };
+})();
+</script>
 {% endblock %}

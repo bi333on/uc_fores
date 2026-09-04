@@ -2009,6 +2009,32 @@ def admin_results_export():
     )
 
 
+@app.route("/admin/results/clear/", methods=["POST"])
+@role_required("admin")
+def admin_results_clear():
+    scope = (request.form.get("scope") or "all").strip()
+    test_id = request.form.get("test_id", type=int)
+    employee_id = request.form.get("employee_id", type=int)
+
+    query = Attempt.query
+    if scope == "test" and test_id:
+        query = query.filter(Attempt.test_id == test_id)
+    elif scope == "employee" and employee_id:
+        query = query.filter(Attempt.employee_id == employee_id)
+
+    if scope == "all":
+        deleted = Attempt.query.delete()
+    else:
+        if (scope == "test" and not test_id) or (scope == "employee" and not employee_id):
+            flash("Не выбрано значение для очистки.", "danger")
+            return redirect(url_for("admin_results"))
+        deleted = query.delete(synchronize_session=False)
+
+    db.session.commit()
+    flash(f"Удалено результатов: {deleted}.", "success")
+    return redirect(url_for("admin_results"))
+
+
 @app.route("/admin/results/<int:attempt_id>/print/")
 @admin_required
 def admin_result_print(attempt_id):
