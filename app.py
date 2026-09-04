@@ -746,8 +746,11 @@ def submit_test(test_id):
         )
 
     # Процент = правильных / отвеченных вопросов.
-    # Если не отвечено ни на один вопрос — 0%.
-    percent = round(correct / answered * 100, 1) if answered else 0.0
+    # Если не отвечено ни на один вопрос или ни одного правильного — 0%.
+    if correct == 0 or answered == 0:
+        percent = 0.0
+    else:
+        percent = round(correct / answered * 100, 1)
     passed = percent >= test.passing_score
 
     attempt.score = correct
