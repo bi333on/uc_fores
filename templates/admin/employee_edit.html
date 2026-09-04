@@ -46,9 +46,9 @@
         </div>
       </div>
       <label>Пароль
-        <input type="text" name="password" id="password" {% if not employee %}required{% endif %} autocomplete="off">
+        <input type="text" name="password" id="password" autocomplete="off">
         <span class="input-hint">
-          {% if employee %}Оставьте пустым, чтобы не менять.{% else %}Минимум 6 символов.{% endif %}
+          {% if employee %}Оставьте пустым, чтобы не менять.{% else %}Оставьте пустым — сотрудник задаст пароль при первом входе. Минимум 8 символов.{% endif %}
         </span>
       </label>
       <div class="field-action">
