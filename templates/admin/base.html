@@ -69,12 +69,6 @@
         <svg {{ icon_attrs|safe }}><path d="M4 6h16"/><path d="M4 12h10"/><path d="M4 18h16"/><circle cx="17" cy="12" r="2"/></svg>
       </span> Умный импорт
     </a>
-    <a href="{{ url_for('admin_import') }}" class="{{ 'active' if ep in ['admin_import', 'admin_import_settings'] }}"
-       {% if ep in ['admin_import', 'admin_import_settings'] %}aria-current="page"{% endif %}>
-      <span class="nav-icon">
-        <svg {{ icon_attrs|safe }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 3v12"/></svg>
-      </span> Импорт WP
-    </a>
     {% endif %}
     {% if 'results' in admin_sections %}
     <a href="{{ url_for('admin_results') }}" class="{{ 'active' if ep in res_endpoints }}"
