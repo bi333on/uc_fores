@@ -76,12 +76,14 @@ SMART_IMPORT_TYPES = {
         "label": "Сотрудники",
         "fields": [
             ("employee_id", "Табельный номер", True),
-            ("full_name", "ФИО", True),
+            ("last_name", "Фамилия", True),
+            ("first_name", "Имя", True),
             ("password", "Пароль", False),
         ],
         "keywords": {
             "employee_id": ["табельный", "employee_id", "employee", "таб. номер", "табномер", "номер", "id"],
-            "full_name": ["фио", "full_name", "имя", "сотрудник", "name"],
+            "last_name": ["фамилия", "last_name", "lastname", "surname"],
+            "first_name": ["имя", "first_name", "firstname", "name"],
             "password": ["пароль", "password"],
         },
         "has_test": False,
@@ -1204,20 +1206,34 @@ def admin_employee_edit(employee_id):
 def _employee_form(employee):
     if request.method == "POST":
         employee_id = (request.form.get("employee_id") or "").strip()
-        full_name = (request.form.get("full_name") or "").strip()
-        if not employee_id or not full_name:
-            flash("Табельный номер и ФИО обязательны.", "danger")
-            return render_template("admin/employee_edit.html", employee=employee)
+        last_name = (request.form.get("last_name") or "").strip()
+        first_name = (request.form.get("first_name") or "").strip()
+        full_name = f"{last_name} {first_name}".strip()
+        if not employee_id or not last_name or not first_name:
+            flash("Табельный номер, фамилия и имя обязательны.", "danger")
+            return render_template(
+                "admin/employee_edit.html",
+                employee=employee,
+                last_name=last_name,
+                first_name=first_name,
+            )
         exists = Employee.query.filter_by(employee_id=employee_id)
         if employee:
             exists = exists.filter(Employee.id != employee.id)
         if exists.first():
             flash("Сотрудник с таким табельным номером уже существует.", "danger")
-            return render_template("admin/employee_edit.html", employee=employee)
+            return render_template(
+                "admin/employee_edit.html",
+                employee=employee,
+                last_name=last_name,
+                first_name=first_name,
+            )
         if not employee:
             employee = Employee()
             db.session.add(employee)
         employee.employee_id = employee_id
+        employee.last_name = last_name
+        employee.first_name = first_name
         employee.full_name = full_name
         password = (request.form.get("password") or "").strip()
         if password:
@@ -1226,7 +1242,23 @@ def _employee_form(employee):
         db.session.commit()
         flash("Сотрудник сохранён.", "success")
         return redirect(url_for("admin_employees"))
-    return render_template("admin/employee_edit.html", employee=employee)
+
+    last_name = ""
+    first_name = ""
+    if employee:
+        if employee.last_name or employee.first_name:
+            last_name = employee.last_name or ""
+            first_name = employee.first_name or ""
+        elif employee.full_name:
+            parts = employee.full_name.split(" ", 1)
+            last_name = parts[0]
+            first_name = parts[1] if len(parts) > 1 else ""
+    return render_template(
+        "admin/employee_edit.html",
+        employee=employee,
+        last_name=last_name,
+        first_name=first_name,
+    )
 
 
 @app.route("/admin/employees/import/", methods=["GET"])
@@ -1407,8 +1439,10 @@ def _run_import_employees(rows, value):
         if not row:
             continue
         emp_id = value(row, "employee_id")
-        name = value(row, "full_name")
-        if not emp_id or not name:
+        last_name = value(row, "last_name")
+        first_name = value(row, "first_name")
+        full_name = f"{last_name} {first_name}".strip()
+        if not emp_id or not last_name or not first_name:
             skipped += 1
             continue
         password = value(row, "password")
@@ -1416,7 +1450,9 @@ def _run_import_employees(rows, value):
             password = config.EMPLOYEE_DEFAULT_PASSWORD
         existing = Employee.query.filter_by(employee_id=emp_id).first()
         if existing:
-            existing.full_name = name
+            existing.last_name = last_name
+            existing.first_name = first_name
+            existing.full_name = full_name
             if password:
                 existing.password_hash = generate_password_hash(password)
             updated += 1
@@ -1424,7 +1460,9 @@ def _run_import_employees(rows, value):
             db.session.add(
                 Employee(
                     employee_id=emp_id,
-                    full_name=name,
+                    last_name=last_name,
+                    first_name=first_name,
+                    full_name=full_name,
                     password_hash=generate_password_hash(password),
                 )
             )

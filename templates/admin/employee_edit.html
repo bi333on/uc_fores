@@ -17,8 +17,11 @@
       <label>Табельный номер
         <input type="text" name="employee_id" value="{{ employee.employee_id if employee else '' }}" required>
       </label>
-      <label>ФИО
-        <input type="text" name="full_name" value="{{ employee.full_name if employee else '' }}" required>
+      <label>Фамилия
+        <input type="text" name="last_name" value="{{ last_name if last_name is defined else '' }}" required>
+      </label>
+      <label>Имя
+        <input type="text" name="first_name" value="{{ first_name if first_name is defined else '' }}" required>
       </label>
       <label>Пароль
         <input type="text" name="password" id="password" {% if not employee %}required{% endif %} autocomplete="off">
