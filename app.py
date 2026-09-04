@@ -1510,6 +1510,11 @@ def _employee_form(employee):
         password = (request.form.get("password") or "").strip()
         if password:
             employee.password_hash = generate_password_hash(password)
+            employee.must_change_password = False
+        elif not employee.password_hash:
+            # Пароль не задан — сотрудник установит его при первом входе
+            employee.must_change_password = True
+            employee.password_hash = ""
         employee.is_active = request.form.get("is_active") == "on"
         db.session.commit()
         flash("Сотрудник сохранён.", "success")
@@ -1833,8 +1838,6 @@ def _run_import_employees(rows, value):
             skipped += 1
             continue
         password = value(row, "password")
-        if not password:
-            password = config.EMPLOYEE_DEFAULT_PASSWORD
         role = parse_role(value(row, "role"))
         existing = Employee.query.filter_by(employee_id=emp_id).first()
         if existing:
@@ -1844,18 +1847,34 @@ def _run_import_employees(rows, value):
             existing.role = role
             if password:
                 existing.password_hash = generate_password_hash(password)
+                existing.must_change_password = False
             updated += 1
         else:
-            db.session.add(
-                Employee(
-                    employee_id=emp_id,
-                    last_name=last_name,
-                    first_name=first_name,
-                    full_name=full_name,
-                    role=role,
-                    password_hash=generate_password_hash(password),
+            if password:
+                db.session.add(
+                    Employee(
+                        employee_id=emp_id,
+                        last_name=last_name,
+                        first_name=first_name,
+                        full_name=full_name,
+                        role=role,
+                        password_hash=generate_password_hash(password),
+                        must_change_password=False,
+                    )
                 )
-            )
+            else:
+                # Пароль не указан — задаст при первом входе
+                db.session.add(
+                    Employee(
+                        employee_id=emp_id,
+                        last_name=last_name,
+                        first_name=first_name,
+                        full_name=full_name,
+                        role=role,
+                        password_hash="",
+                        must_change_password=True,
+                    )
+                )
             created += 1
     db.session.commit()
     return jsonify(
