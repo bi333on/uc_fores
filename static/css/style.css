@@ -896,6 +896,10 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .qe-head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .qe-head .qe-text { flex: 1; min-width: 200px; margin-top: 0; }
 .qe-head select { width: auto; margin-top: 0; }
+.qe-check { width: auto; margin: 0; }
+.qe-active-wrap { display: inline-flex; align-items: center; gap: 6px; margin: 0; font-weight: 400; white-space: nowrap; cursor: pointer; }
+.qe-active-wrap input { width: auto; }
+.qe-active-wrap span { font-size: .82rem; color: var(--muted); }
 .qe-num {
   display: inline-flex;
   align-items: center;

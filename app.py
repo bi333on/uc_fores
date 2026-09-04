@@ -1156,6 +1156,8 @@ def api_question_update(question_id):
         q.text = (data.get("text") or "").strip()
     if "question_type" in data and data["question_type"] in ("single", "multiple"):
         q.question_type = data["question_type"]
+    if "is_active" in data:
+        q.is_active = bool(data["is_active"])
     db.session.commit()
     return jsonify({"ok": True})
 
@@ -1167,6 +1169,43 @@ def api_question_delete(question_id):
     db.session.delete(q)
     db.session.commit()
     return jsonify({"ok": True})
+
+
+@app.route("/admin/api/tests/<int:test_id>/questions/bulk/", methods=["POST"])
+@admin_required
+def api_question_bulk(test_id):
+    test = Test.query.get_or_404(test_id)
+    data = request.get_json(silent=True) or {}
+    action = data.get("action")
+    ids = [int(i) for i in data.get("ids") or [] if str(i).isdigit()]
+    if not ids:
+        return jsonify({"ok": False, "error": "Не выбрано ни одного вопроса"}), 400
+
+    if action == "delete":
+        Question.query.filter(Question.id.in_(ids), Question.test_id == test.id).delete(
+            synchronize_session=False
+        )
+        db.session.commit()
+        return jsonify({"ok": True, "message": f"Удалено вопросов: {len(ids)}"})
+
+    if action in ("single", "multiple"):
+        Question.query.filter(Question.id.in_(ids), Question.test_id == test.id).update(
+            {"question_type": action}, synchronize_session=False
+        )
+        db.session.commit()
+        label = "один ответ" if action == "single" else "несколько ответов"
+        return jsonify({"ok": True, "message": f"Тип «{label}» применён к {len(ids)} вопросам"})
+
+    if action in ("activate", "deactivate"):
+        is_active = action == "activate"
+        Question.query.filter(Question.id.in_(ids), Question.test_id == test.id).update(
+            {"is_active": is_active}, synchronize_session=False
+        )
+        db.session.commit()
+        label = "активированы" if is_active else "деактивированы"
+        return jsonify({"ok": True, "message": f"Вопросы {label}: {len(ids)}"})
+
+    return jsonify({"ok": False, "error": "Неизвестное действие"}), 400
 
 
 @app.route("/admin/api/questions/<int:question_id>/options/", methods=["POST"])

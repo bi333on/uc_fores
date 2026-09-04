@@ -29,6 +29,34 @@
 
   function reload() { window.location.reload(); }
 
+  // --- Массовые действия ---
+  const checkAll = document.getElementById('check-all');
+  const bulkBtn = document.getElementById('bulk-btn');
+  const bulkAction = document.getElementById('bulk-action');
+
+  function selectedQuestionIds() {
+    return Array.from(editor.querySelectorAll('.qe-check:checked'))
+      .map(function (c) { return c.closest('.question-editor').dataset.questionId; });
+  }
+
+  if (checkAll) {
+    checkAll.addEventListener('change', function () {
+      editor.querySelectorAll('.qe-check').forEach(function (c) { c.checked = checkAll.checked; });
+    });
+  }
+
+  if (bulkBtn) {
+    bulkBtn.addEventListener('click', function () {
+      const action = bulkAction.value;
+      if (!action) { alert('Выберите действие'); return; }
+      const ids = selectedQuestionIds();
+      if (!ids.length) { alert('Не выбрано ни одного вопроса'); return; }
+      if (action === 'delete' && !confirm('Удалить выбранные вопросы и их варианты?')) return;
+      jsonApi('/admin/api/tests/' + testId + '/questions/bulk/', 'POST', { action: action, ids: ids })
+        .then(function (r) { r.ok ? reload() : alert(r.data.error || 'Ошибка'); });
+    });
+  }
+
   // Добавить вопрос
   const addBtn = document.getElementById('add-question-btn');
   addBtn.addEventListener('click', function () {
@@ -105,6 +133,13 @@
       const oid = t.closest('.option-row').dataset.optionId;
       uploadImage('/admin/api/options/' + oid + '/image/', t.files[0])
         .then(function (r) { r.ok ? reload() : alert(r.data.error || 'Ошибка'); });
+    }
+
+    // Активность вопроса
+    if (t.classList.contains('qe-active')) {
+      const qid = t.closest('.question-editor').dataset.questionId;
+      jsonApi('/admin/api/questions/' + qid + '/', 'PUT', { is_active: t.checked })
+        .then(function (r) { if (!r.ok) alert(r.data.error || 'Ошибка'); });
     }
   });
 })();

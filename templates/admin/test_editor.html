@@ -30,15 +30,38 @@
   </div>
 
   <div id="questions">
+    {% if questions %}
+    <div class="bulk-bar">
+      <label class="checkbox"><input type="checkbox" id="check-all"> Выбрать все</label>
+      <div class="bulk-actions">
+        <span class="muted">С выбранными:</span>
+        <select id="bulk-action" aria-label="Массовое действие">
+          <option value="">— действие —</option>
+          <option value="single">Тип: один ответ</option>
+          <option value="multiple">Тип: несколько ответов</option>
+          <option value="activate">Активировать</option>
+          <option value="deactivate">Деактивировать</option>
+          <option value="delete">Удалить</option>
+        </select>
+        <button class="btn btn-outline" type="button" id="bulk-btn">Применить</button>
+      </div>
+    </div>
+    {% endif %}
+
     {% for q in questions %}
     <div class="panel question-editor" data-question-id="{{ q.id }}">
       <div class="qe-head">
+        <input type="checkbox" class="qe-check" aria-label="Выбрать вопрос">
         <span class="qe-num">{{ loop.index }}</span>
         <select class="qe-type-select" aria-label="Тип вопроса">
           <option value="single" {% if q.question_type != 'multiple' %}selected{% endif %}>один ответ</option>
           <option value="multiple" {% if q.question_type == 'multiple' %}selected{% endif %}>несколько ответов</option>
         </select>
         <input class="qe-text" type="text" value="{{ q.text }}" aria-label="Текст вопроса">
+        <label class="checkbox qe-active-wrap" title="Активен в тесте">
+          <input type="checkbox" class="qe-active" {% if q.is_active %}checked{% endif %}>
+          <span>Активен</span>
+        </label>
         <button class="btn btn-sm btn-danger qe-delete">Удалить</button>
       </div>
       {% if q.image_path %}
