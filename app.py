@@ -69,6 +69,75 @@ PDF_EXTS = {".pdf"}
 DOCUMENT_EXTS = {".pdf", ".jpg", ".jpeg"}
 IMPORT_EXTS = {".csv", ".xlsx", ".xls"}
 
+# Конфигурация «умного» импорта: какие поля у какого типа данных.
+# fields: (ключ, подпись, обязательное). keywords: по каким словам искать колонку.
+SMART_IMPORT_TYPES = {
+    "employees": {
+        "label": "Сотрудники",
+        "fields": [
+            ("employee_id", "Табельный номер", True),
+            ("full_name", "ФИО", True),
+            ("password", "Пароль", False),
+        ],
+        "keywords": {
+            "employee_id": ["табельный", "employee_id", "employee", "таб. номер", "табномер", "номер", "id"],
+            "full_name": ["фио", "full_name", "имя", "сотрудник", "name"],
+            "password": ["пароль", "password"],
+        },
+        "has_test": False,
+    },
+    "questions": {
+        "label": "Вопросы и варианты",
+        "fields": [
+            ("text", "Текст вопроса", True),
+            ("type", "Тип (один/несколько)", False),
+            ("answer_1", "Вариант 1", False),
+            ("answer_2", "Вариант 2", False),
+            ("answer_3", "Вариант 3", False),
+            ("answer_4", "Вариант 4", False),
+            ("answer_5", "Вариант 5", False),
+            ("answer_6", "Вариант 6", False),
+            ("correct", "Правильные ответы", False),
+        ],
+        "keywords": {
+            "text": ["вопрос", "question", "текст"],
+            "type": ["тип", "type"],
+            "answer_1": ["вариант 1", "ответ 1", "answer1", "answer_1", "a1"],
+            "answer_2": ["вариант 2", "ответ 2", "answer2", "answer_2", "a2"],
+            "answer_3": ["вариант 3", "ответ 3", "answer3", "answer_3", "a3"],
+            "answer_4": ["вариант 4", "ответ 4", "answer4", "answer_4", "a4"],
+            "answer_5": ["вариант 5", "ответ 5", "answer5", "answer_5", "a5"],
+            "answer_6": ["вариант 6", "ответ 6", "answer6", "answer_6", "a6"],
+            "correct": ["правильн", "correct", "верн"],
+        },
+        "has_test": True,
+    },
+    "results": {
+        "label": "Результаты",
+        "fields": [
+            ("employee_id", "Табельный номер", False),
+            ("full_name", "ФИО", False),
+            ("test", "Название теста", True),
+            ("score", "Правильных ответов", False),
+            ("total", "Всего вопросов", False),
+            ("percent", "Процент", False),
+            ("passed", "Пройден (да/нет)", False),
+            ("date", "Дата", False),
+        ],
+        "keywords": {
+            "employee_id": ["табельный", "employee_id", "employee", "номер", "id"],
+            "full_name": ["фио", "full_name", "имя", "сотрудник", "name"],
+            "test": ["тест", "test", "quiz", "название"],
+            "score": ["балл", "правильн", "score", "correct"],
+            "total": ["всего", "total", "вопросов"],
+            "percent": ["процент", "percent", "%"],
+            "passed": ["пройден", "passed", "сдан", "результат"],
+            "date": ["дата", "date", "время"],
+        },
+        "has_test": False,
+    },
+}
+
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
 login_manager.login_message = "Войдите в личный кабинет для прохождения обучения."
@@ -1160,76 +1229,195 @@ def _employee_form(employee):
     return render_template("admin/employee_edit.html", employee=employee)
 
 
-@app.route("/admin/employees/import/", methods=["GET", "POST"])
+@app.route("/admin/employees/import/", methods=["GET"])
 @admin_required
 def admin_employee_import():
-    result = None
-    if request.method == "POST":
-        upload = request.files.get("file")
-        if not upload or not upload.filename:
-            result = ("danger", "Файл не выбран")
-        else:
-            ext = os.path.splitext(upload.filename)[1].lower()
-            if ext not in IMPORT_EXTS:
-                result = ("danger", "Поддерживаются только CSV или XLSX")
-            else:
-                count, msg = _import_employees(upload, ext)
-                result = ("success" if count else "danger", msg)
-    return render_template("admin/employee_import.html", result=result)
+    return render_template("admin/employee_import.html")
 
 
-def _import_employees(upload, ext):
-    rows = []
-    try:
-        if ext == ".csv":
-            text = upload.read().decode("utf-8-sig", errors="replace")
-            rows = [r for r in csv.reader(io.StringIO(text))]
-        else:
-            import openpyxl
+def _parse_import_bytes(data: bytes, ext: str):
+    if ext == ".csv":
+        text = data.decode("utf-8-sig", errors="replace")
+        return [r for r in csv.reader(io.StringIO(text))]
+    import openpyxl
 
-            wb = openpyxl.load_workbook(io.BytesIO(upload.read()))
-            ws = wb.active
-            rows = [
-                [str(c.value).strip() if c.value is not None else "" for c in row]
-                for row in ws.iter_rows()
-            ]
-    except Exception as exc:  # noqa: BLE001
-        return 0, f"Ошибка чтения файла: {exc}"
+    wb = openpyxl.load_workbook(io.BytesIO(data))
+    ws = wb.active
+    return [
+        [str(c.value).strip() if c.value is not None else "" for c in row]
+        for row in ws.iter_rows()
+    ]
 
-    if not rows:
-        return 0, "Файл пустой"
 
-    header = [str(h).strip().lower() for h in rows[0]]
+def _guess_mapping(header):
+    """Автоподбор: возвращает имя колонки (или None) для каждого поля сотрудников."""
+    return _smart_guess(header, SMART_IMPORT_TYPES["employees"])
 
-    def col(*names):
-        for n in names:
+
+def _smart_guess(header, spec):
+    lowered = [(i, str(h).strip().lower()) for i, h in enumerate(header)]
+
+    def find(keywords):
+        for n in keywords:
             n = n.lower()
-            for i, h in enumerate(header):
+            for i, h in lowered:
                 if n in h:
-                    return i
+                    return header[i]
         return None
 
-    i_emp = col("табельный", "employee_id", "таб. номер", "номер", "id")
-    i_name = col("фио", "full_name", "имя", "сотрудник", "name")
-    i_pass = col("пароль", "password")
-    if i_emp is None or i_name is None:
-        return 0, "Не найдены колонки «табельный номер» и «ФИО»"
+    result = {}
+    for key, _label, _req in spec["fields"]:
+        result[key] = find(spec["keywords"].get(key, [key]))
+    return result
 
+
+@app.route("/admin/employees/import/preview/", methods=["POST"])
+@admin_required
+def admin_employee_import_preview():
+    return _smart_import_preview("employees")
+
+
+@app.route("/admin/employees/import/run/", methods=["POST"])
+@admin_required
+def admin_employee_import_run():
+    return _smart_import_run("employees")
+
+
+def _smart_import_preview(import_type):
+    spec = SMART_IMPORT_TYPES[import_type]
+    upload = request.files.get("file")
+    if not upload or not upload.filename:
+        return jsonify({"ok": False, "error": "Файл не выбран"})
+    ext = os.path.splitext(upload.filename)[1].lower()
+    if ext not in IMPORT_EXTS:
+        return jsonify({"ok": False, "error": "Поддерживаются только CSV или XLSX"})
+
+    data = upload.read()
+    try:
+        rows = _parse_import_bytes(data, ext)
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"ok": False, "error": f"Ошибка чтения файла: {exc}"})
+    if not rows:
+        return jsonify({"ok": False, "error": "Файл пустой"})
+
+    header = [str(h).strip() for h in rows[0]]
+    if not any(header):
+        return jsonify({"ok": False, "error": "Не найдена строка заголовков"})
+
+    token = secrets.token_hex(16)
+    tmpdir = os.path.join(UPLOAD_DIR, "tmp")
+    os.makedirs(tmpdir, exist_ok=True)
+    with open(os.path.join(tmpdir, f"{token}{ext}"), "wb") as fh:
+        fh.write(data)
+
+    preview = rows[1:6]
+    return jsonify(
+        {
+            "ok": True,
+            "token": token,
+            "ext": ext,
+            "type": import_type,
+            "columns": header,
+            "preview": preview,
+            "total_rows": max(0, len(rows) - 1),
+            "suggested": _smart_guess(header, spec),
+            "fields": [
+                {"key": k, "label": lbl, "required": req}
+                for k, lbl, req in spec["fields"]
+            ],
+            "tests": [
+                {"id": t.id, "title": t.title}
+                for t in Test.query.order_by(Test.id).all()
+            ] if spec["has_test"] else [],
+        }
+    )
+
+
+def _smart_import_run(import_type):
+    spec = SMART_IMPORT_TYPES[import_type]
+    payload = request.get_json(silent=True) or {}
+    token = (payload.get("token") or "").strip()
+    ext = (payload.get("ext") or "").strip().lower()
+    mapping = payload.get("mapping") or {}
+    test_id = payload.get("test_id")
+
+    if not token or ext not in IMPORT_EXTS:
+        return jsonify({"ok": False, "error": "Неверный запрос"})
+
+    path = os.path.join(UPLOAD_DIR, "tmp", f"{token}{ext}")
+    if not os.path.exists(path):
+        return jsonify({"ok": False, "error": "Файл не найден — загрузите заново"})
+
+    try:
+        with open(path, "rb") as fh:
+            rows = _parse_import_bytes(fh.read(), ext)
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"ok": False, "error": f"Ошибка чтения файла: {exc}"})
+    finally:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+
+    if not rows:
+        return jsonify({"ok": False, "error": "Файл пустой"})
+
+    header = [str(h).strip() for h in rows[0]]
+    header_lower = [h.lower() for h in header]
+
+    def col_index(col_name):
+        if not col_name:
+            return None
+        c = str(col_name).strip()
+        if c in header:
+            return header.index(c)
+        lc = c.lower()
+        if lc in header_lower:
+            return header_lower.index(lc)
+        return None
+
+    def value(row, key):
+        i = col_index(mapping.get(key))
+        if i is None or i >= len(row):
+            return ""
+        return str(row[i]).strip()
+
+    # обязательные поля
+    missing = []
+    for key, label, req in spec["fields"]:
+        if req and not mapping.get(key):
+            missing.append(label)
+    if missing:
+        return jsonify({"ok": False, "error": f"Выберите колонки: {', '.join(missing)}"})
+
+    if import_type == "employees":
+        return _run_import_employees(rows, value)
+    if import_type == "questions":
+        if not test_id:
+            return jsonify({"ok": False, "error": "Выберите тест для вопросов"})
+        return _run_import_questions(rows, value, int(test_id))
+    if import_type == "results":
+        return _run_import_results(rows, value)
+    return jsonify({"ok": False, "error": "Неизвестный тип импорта"})
+
+
+def _run_import_employees(rows, value):
     created = updated = skipped = 0
     for row in rows[1:]:
         if not row:
             continue
-        emp_id = (row[i_emp] or "").strip() if i_emp < len(row) else ""
-        name = (row[i_name] or "").strip() if i_name < len(row) else ""
+        emp_id = value(row, "employee_id")
+        name = value(row, "full_name")
         if not emp_id or not name:
             skipped += 1
             continue
-        has_password = i_pass is not None and i_pass < len(row) and bool(row[i_pass].strip())
-        password = row[i_pass].strip() if has_password else config.EMPLOYEE_DEFAULT_PASSWORD
+        password = value(row, "password")
+        if not password:
+            password = config.EMPLOYEE_DEFAULT_PASSWORD
         existing = Employee.query.filter_by(employee_id=emp_id).first()
         if existing:
             existing.full_name = name
-            if has_password:
+            if password:
                 existing.password_hash = generate_password_hash(password)
             updated += 1
         else:
@@ -1242,7 +1430,153 @@ def _import_employees(upload, ext):
             )
             created += 1
     db.session.commit()
-    return created + updated, f"Создано: {created}, обновлено: {updated}, пропущено: {skipped}"
+    return jsonify(
+        {
+            "ok": True,
+            "message": f"Сотрудники: создано {created}, обновлено {updated}, пропущено {skipped}",
+        }
+    )
+
+
+def _run_import_questions(rows, value, test_id):
+    test = db.session.get(Test, test_id)
+    if not test:
+        return jsonify({"ok": False, "error": "Тест не найден"})
+
+    created = skipped = 0
+    base_order = Question.query.filter_by(test_id=test.id).count()
+    for row in rows[1:]:
+        if not row:
+            continue
+        text = value(row, "text")
+        if not text:
+            skipped += 1
+            continue
+        qtype = "multiple" if str(value(row, "type")).lower() in ("несколько", "multiple", "multi") else "single"
+        base_order += 1
+        q = Question(
+            test_id=test.id,
+            text=text,
+            question_type=qtype,
+            sort_order=base_order,
+        )
+        db.session.add(q)
+        db.session.flush()
+
+        answers = []
+        correct = set()
+        for i in range(1, 7):
+            a = value(row, f"answer_{i}")
+            if a:
+                answers.append(a)
+        correct_raw = value(row, "correct")
+        if correct_raw:
+            # Поддерживает: номера через запятую "1,3" или текст через ";" 
+            parts = re.split(r"[,;]", correct_raw)
+            for p in parts:
+                p = p.strip()
+                if not p:
+                    continue
+                if p.isdigit():
+                    idx = int(p)
+                    if 1 <= idx <= len(answers):
+                        correct.add(answers[idx - 1])
+                else:
+                    correct.add(p)
+
+        for i, ans in enumerate(answers):
+            db.session.add(
+                AnswerOption(
+                    question_id=q.id,
+                    text=ans,
+                    is_correct=ans in correct,
+                    sort_order=i + 1,
+                )
+            )
+        created += 1
+    db.session.commit()
+    return jsonify(
+        {
+            "ok": True,
+            "message": f"Вопросов создано: {created}, пропущено: {skipped}",
+        }
+    )
+
+
+def _run_import_results(rows, value):
+    created = skipped = 0
+    for row in rows[1:]:
+        if not row:
+            continue
+        test_title = value(row, "test")
+        if not test_title:
+            skipped += 1
+            continue
+        test = Test.query.filter_by(title=test_title).first()
+        if not test:
+            skipped += 1
+            continue
+
+        emp_id = value(row, "employee_id")
+        name = value(row, "full_name")
+        employee = None
+        if emp_id:
+            employee = Employee.query.filter_by(employee_id=emp_id).first()
+        if not employee and name:
+            employee = Employee.query.filter_by(full_name=name).first()
+        if not employee:
+            skipped += 1
+            continue
+
+        try:
+            total = int(value(row, "total") or 0)
+            score = int(value(row, "score") or 0)
+        except ValueError:
+            total = score = 0
+        pct_raw = value(row, "percent").replace("%", "").replace(",", ".")
+        try:
+            percent = float(pct_raw) if pct_raw else (round(score / total * 100, 1) if total else 0.0)
+        except ValueError:
+            percent = 0.0
+        passed_raw = value(row, "passed").lower()
+        if passed_raw:
+            passed = passed_raw in ("да", "yes", "1", "true", "пройден", "сдан", "+")
+        else:
+            passed = percent >= test.passing_score
+
+        date_raw = value(row, "date")
+        finished = None
+        if date_raw:
+            for fmt in ("%d.%m.%Y %H:%M", "%d.%m.%Y", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+                try:
+                    finished = datetime.strptime(date_raw, fmt)
+                    break
+                except ValueError:
+                    continue
+        finished = finished or datetime.now(timezone.utc)
+
+        db.session.add(
+            Attempt(
+                employee_id=employee.id,
+                test_id=test.id,
+                started_at=finished,
+                finished_at=finished,
+                score=score,
+                total=total or len(test.questions),
+                percent=percent,
+                passed=passed,
+                status="finished",
+                answers_json="[]",
+            )
+        )
+        created += 1
+    db.session.commit()
+    return jsonify(
+        {
+            "ok": True,
+            "message": f"Результатов создано: {created}, пропущено: {skipped}",
+        }
+    )
 
 
 @app.route("/admin/employees/<int:employee_id>/delete/", methods=["POST"])
@@ -1254,6 +1588,33 @@ def admin_employee_delete(employee_id):
     db.session.commit()
     flash("Сотрудник удалён.", "success")
     return redirect(url_for("admin_employees"))
+
+
+# ---------------------------------------------------------------- admin: smart import (CSV/Excel)
+
+@app.route("/admin/smart-import/")
+@admin_required
+def admin_smart_import():
+    return render_template("admin/smart_import.html")
+
+
+@app.route("/admin/smart-import/preview/", methods=["POST"])
+@admin_required
+def admin_smart_import_preview():
+    import_type = (request.form.get("type") or "").strip()
+    if import_type not in SMART_IMPORT_TYPES:
+        return jsonify({"ok": False, "error": "Неизвестный тип импорта"})
+    return _smart_import_preview(import_type)
+
+
+@app.route("/admin/smart-import/run/", methods=["POST"])
+@admin_required
+def admin_smart_import_run():
+    payload = request.get_json(silent=True) or {}
+    import_type = (payload.get("type") or request.form.get("type") or "").strip()
+    if import_type not in SMART_IMPORT_TYPES:
+        return jsonify({"ok": False, "error": "Неизвестный тип импорта"})
+    return _smart_import_run(import_type)
 
 
 # ---------------------------------------------------------------- admin: results

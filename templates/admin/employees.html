@@ -7,7 +7,7 @@
     <p class="muted small">Всего: {{ employees|length }}{% if q %} · по запросу «{{ q }}»{% endif %}</p>
   </div>
   <div class="page-head-actions">
-    <a class="btn btn-outline" href="{{ url_for('admin_employee_import') }}">Импорт CSV/Excel</a>
+    <a class="btn btn-outline" href="{{ url_for('admin_smart_import') }}">Импорт CSV/Excel</a>
     <a class="btn btn-primary" href="{{ url_for('admin_employee_new') }}">Добавить</a>
   </div>
 </div>

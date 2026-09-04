@@ -11,24 +11,13 @@
   </div>
 </div>
 
-{% if result %}
-<div class="flash flash-{{ result[0] }}">{{ result[1] }}</div>
-{% endif %}
-
-<form method="post" enctype="multipart/form-data" class="form-panel">
-  <div class="panel">
-    <div class="notice">
-      <b>Обязательные колонки:</b> «табельный номер» и «ФИО».<br>
-      <b>Опционально:</b> «пароль» — если колонки нет, используется пароль по умолчанию из настроек.
-    </div>
-    <label>Файл
-      <input type="file" name="file" accept=".csv,.xlsx,.xls" required>
-      <span class="input-hint">Поддерживаются форматы CSV, XLSX и XLS.</span>
-    </label>
+<div class="panel">
+  <div class="notice">
+    Импорт теперь выполняется через «Умный импорт» с выбором и сопоставлением полей
+    (сотрудники, вопросы, результаты).
   </div>
   <div class="form-actions">
-    <button class="btn btn-primary" type="submit">Импортировать</button>
-    <a class="btn btn-outline" href="{{ url_for('admin_employees') }}">Отмена</a>
+    <a class="btn btn-primary" href="{{ url_for('admin_smart_import') }}">Перейти к умному импорту</a>
   </div>
-</form>
+</div>
 {% endblock %}

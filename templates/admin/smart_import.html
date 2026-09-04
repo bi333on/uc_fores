@@ -1,0 +1,203 @@
+{% extends "admin/base.html" %}
+{% block title %}Умный импорт{% endblock %}
+{% block content %}
+<h1>Умный импорт (CSV / Excel)</h1>
+<p class="muted">
+  Загрузите файл, укажите тип данных и сопоставьте колонки файла с полями.
+  Совпадающие колонки подставятся автоматически по названиям.
+</p>
+
+<div class="panel">
+  <div class="editor-add" style="margin-bottom:12px">
+    <select id="import-type">
+      <option value="employees">Сотрудники</option>
+      <option value="questions">Вопросы и варианты</option>
+      <option value="results">Результаты</option>
+    </select>
+    <input type="file" id="import-file" accept=".csv,.xlsx,.xls">
+    <button class="btn btn-primary" id="preview-btn">Просмотреть</button>
+  </div>
+  <div class="muted" id="import-status" style="margin-bottom:10px"></div>
+</div>
+
+<div class="panel" id="mapping-panel" style="display:none">
+  <h2>Сопоставление полей</h2>
+  <div class="muted">Всего строк: <span id="total-rows">0</span></div>
+
+  <div id="test-select-wrap" style="display:none; margin:10px 0">
+    <label>Тест, в который добавить вопросы
+      <select id="import-test">
+        <option value="">— выберите тест —</option>
+      </select>
+    </label>
+  </div>
+
+  <table class="table" id="mapping-table">
+    <thead><tr><th>Поле</th><th>Колонка из файла</th></tr></thead>
+    <tbody></tbody>
+  </table>
+
+  <div class="panel" style="background:#f7fafc">
+    <h3>Предпросмотр данных</h3>
+    <div style="overflow-x:auto">
+      <table class="table" id="preview-table"></table>
+    </div>
+  </div>
+
+  <button class="btn btn-primary btn-lg" id="run-btn">Выполнить импорт</button>
+  <pre class="update-output" id="import-output" style="display:none"></pre>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var typeSel = document.getElementById('import-type');
+  var fileInput = document.getElementById('import-file');
+  var previewBtn = document.getElementById('preview-btn');
+  var runBtn = document.getElementById('run-btn');
+  var statusEl = document.getElementById('import-status');
+  var mappingPanel = document.getElementById('mapping-panel');
+  var mappingTbody = document.querySelector('#mapping-table tbody');
+  var previewTable = document.getElementById('preview-table');
+  var totalRowsEl = document.getElementById('total-rows');
+  var testSelectWrap = document.getElementById('test-select-wrap');
+  var testSelect = document.getElementById('import-test');
+  var outputEl = document.getElementById('import-output');
+
+  var state = null;
+
+  function parseJson(r) {
+    var ct = r.headers.get('content-type') || '';
+    if (ct.indexOf('application/json') !== -1) return r.json();
+    return r.text().then(function (t) {
+      var hint = t.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160);
+      if (r.status === 413) throw new Error('Файл слишком большой. Увеличьте MAX_UPLOAD_MB в .env.');
+      if (r.status === 401 || r.status === 403) throw new Error('Сессия истекла — перелогиньтесь.');
+      throw new Error('Сервер вернул не JSON (HTTP ' + r.status + '): ' + (hint || t.slice(0, 120)));
+    });
+  }
+
+  previewBtn.addEventListener('click', function () {
+    if (!fileInput.files.length) { statusEl.textContent = 'Выберите файл'; return; }
+    var fd = new FormData();
+    fd.append('file', fileInput.files[0]);
+    fd.append('type', typeSel.value);
+    statusEl.textContent = 'Чтение файла…';
+    fetch('{{ url_for("admin_smart_import_preview") }}', {
+      method: 'POST', body: fd, headers: {'X-Requested-With': 'XMLHttpRequest'}
+    })
+      .then(parseJson)
+      .then(function (d) {
+        if (!d.ok) { statusEl.textContent = 'Ошибка: ' + d.error; return; }
+        state = d;
+        statusEl.textContent = 'Файл прочитан. Сопоставьте поля ниже.';
+        buildMapping();
+      })
+      .catch(function (e) { statusEl.textContent = 'Ошибка: ' + e.message; });
+  });
+
+  function buildMapping() {
+    mappingTbody.innerHTML = '';
+    totalRowsEl.textContent = state.total_rows;
+
+    // тест для вопросов
+    if (state.type === 'questions') {
+      testSelectWrap.style.display = '';
+      testSelect.innerHTML = '<option value="">— выберите тест —</option>';
+      state.tests.forEach(function (t) {
+        var o = document.createElement('option');
+        o.value = t.id;
+        o.textContent = t.title;
+        testSelect.appendChild(o);
+      });
+    } else {
+      testSelectWrap.style.display = 'none';
+    }
+
+    state.fields.forEach(function (f) {
+      var tr = document.createElement('tr');
+      var td1 = document.createElement('td');
+      td1.textContent = f.label + (f.required ? ' *' : '');
+      var td2 = document.createElement('td');
+      var sel = document.createElement('select');
+      sel.dataset.key = f.key;
+      var empty = document.createElement('option');
+      empty.value = '';
+      empty.textContent = '— не выбрано —';
+      sel.appendChild(empty);
+      state.columns.forEach(function (c) {
+        var o = document.createElement('option');
+        o.value = c;
+        o.textContent = c;
+        if (state.suggested && state.suggested[f.key] === c) o.selected = true;
+        sel.appendChild(o);
+      });
+      td2.appendChild(sel);
+      tr.appendChild(td1);
+      tr.appendChild(td2);
+      mappingTbody.appendChild(tr);
+    });
+
+    buildPreview();
+    mappingPanel.style.display = '';
+  }
+
+  function buildPreview() {
+    previewTable.innerHTML = '';
+    var thead = document.createElement('thead');
+    var trh = document.createElement('tr');
+    state.columns.forEach(function (c) {
+      var th = document.createElement('th');
+      th.textContent = c;
+      trh.appendChild(th);
+    });
+    thead.appendChild(trh);
+    previewTable.appendChild(thead);
+
+    var tbody = document.createElement('tbody');
+    (state.preview || []).forEach(function (row) {
+      var tr = document.createElement('tr');
+      state.columns.forEach(function (_, i) {
+        var td = document.createElement('td');
+        td.textContent = row[i] !== undefined ? row[i] : '';
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    previewTable.appendChild(tbody);
+  }
+
+  runBtn.addEventListener('click', function () {
+    if (!state) return;
+    var mapping = {};
+    mappingTbody.querySelectorAll('select').forEach(function (sel) {
+      mapping[sel.dataset.key] = sel.value;
+    });
+    var body = {
+      type: state.type,
+      token: state.token,
+      ext: state.ext,
+      mapping: mapping
+    };
+    if (state.type === 'questions') {
+      body.test_id = testSelect.value ? parseInt(testSelect.value, 10) : null;
+    }
+    outputEl.style.display = 'block';
+    outputEl.textContent = 'Выполняется…';
+    runBtn.disabled = true;
+    fetch('{{ url_for("admin_smart_import_run") }}', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+      body: JSON.stringify(body)
+    })
+      .then(parseJson)
+      .then(function (d) {
+        runBtn.disabled = false;
+        outputEl.textContent = d.ok ? (d.message || 'Готово') : ('Ошибка: ' + (d.error || 'неизвестно'));
+      })
+      .catch(function (e) { runBtn.disabled = false; outputEl.textContent = 'Ошибка: ' + e.message; });
+  });
+})();
+</script>
+{% endblock %}
