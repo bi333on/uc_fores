@@ -73,6 +73,11 @@ function togglePass(btn) {
   if (empInput && hint) {
     empInput.addEventListener('blur', checkEmployee);
     empInput.addEventListener('change', checkEmployee);
+    var timer = null;
+    empInput.addEventListener('input', function () {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(checkEmployee, 400);
+    });
   }
 })();
 </script>
