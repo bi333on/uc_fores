@@ -170,12 +170,47 @@ ROLE_LABELS = {
     "admin": "Администратор",
 }
 
+# Разделы админки, которые можно разрешать редакторам индивидуально.
+EDITOR_SECTIONS = {
+    "categories": "Категории",
+    "materials": "Документы",
+    "tests": "Тесты",
+    "results": "Результаты",
+}
+
+# Маппинг раздела -> префиксы endpoint'ов, которые к нему относятся.
+SECTION_ENDPOINTS = {
+    "categories": ("admin_categories", "admin_category_new", "admin_category_edit", "admin_category_delete"),
+    "materials": ("admin_materials", "admin_material_new", "admin_material_edit", "admin_material_delete"),
+    "tests": ("admin_tests", "admin_test_new", "admin_test_edit", "admin_test_editor",
+              "admin_test_delete", "admin_test_duplicate",
+              "api_question_create", "api_question_update", "api_question_delete",
+              "api_question_bulk", "api_option_create", "api_option_update",
+              "api_option_delete", "api_question_image", "api_option_image"),
+    "results": ("admin_results", "admin_results_export", "admin_result_print"),
+}
+
 
 def current_admin_role() -> str:
-    """Возвращает роль текущего админ-входа: 'admin' или 'editor'."""
+    """Возвращает роль текущего админ-входа: 'admin', 'editor' или ''."""
     if not session.get("admin_logged_in"):
         return ""
     return session.get("admin_role") or "admin"
+
+
+def current_admin_sections():
+    """Разрешённые разделы для текущего редактора (для admin — все)."""
+    if current_admin_role() == "admin":
+        return list(EDITOR_SECTIONS.keys())
+    return session.get("admin_sections") or []
+
+
+def editor_has_section(endpoint: str) -> bool:
+    """Проверяет, разрешён ли текущему редактору endpoint по его разделам."""
+    for section, endpoints in SECTION_ENDPOINTS.items():
+        if endpoint in endpoints:
+            return section in current_admin_sections()
+    return True  # прочие (dashboard, logout) доступны всем редакторам
 
 
 def role_required(*roles):
@@ -192,6 +227,14 @@ def role_required(*roles):
                     return jsonify({"ok": False, "error": "Недостаточно прав"}), 403
                 flash("Недостаточно прав для этого раздела.", "danger")
                 return redirect(url_for("admin_dashboard"))
+            # Для редактора дополнительно проверяем индивидуальные разделы
+            if role == "editor":
+                ep = request.endpoint
+                if ep and not editor_has_section(ep):
+                    if request.path.startswith("/admin/api/"):
+                        return jsonify({"ok": False, "error": "Раздел недоступен"}), 403
+                    flash("Раздел недоступен для вашей учётной записи.", "danger")
+                    return redirect(url_for("admin_dashboard"))
             return f(*args, **kwargs)
 
         return wrapper
@@ -450,6 +493,7 @@ def inject_globals():
         "site_url": config.SITE_URL,
         "now_year": datetime.now().year,
         "admin_role": current_admin_role(),
+        "admin_sections": current_admin_sections(),
     }
 
 
@@ -773,6 +817,12 @@ def admin_login():
             session["admin_logged_in"] = True
             session["admin_id"] = employee.id
             session["admin_role"] = employee.role
+            if employee.role == "editor":
+                try:
+                    perms = json.loads(employee.permissions or "[]")
+                    session["admin_sections"] = [p for p in perms if p in EDITOR_SECTIONS]
+                except Exception:  # noqa: BLE001
+                    session["admin_sections"] = []
             return redirect(url_for("admin_dashboard"))
         error = "Неверный логин или пароль"
     return render_template("admin/login.html", error=error)
@@ -1354,6 +1404,12 @@ def _employee_form(employee):
         employee.full_name = full_name
         role = (request.form.get("role") or "student").strip()
         employee.role = role if role in ROLES else "student"
+        # Индивидуальные права редактора (галочки)
+        if employee.role == "editor":
+            perms = request.form.getlist("permissions")
+            employee.permissions = json.dumps([p for p in perms if p in EDITOR_SECTIONS])
+        else:
+            employee.permissions = "[]"
         password = (request.form.get("password") or "").strip()
         if password:
             employee.password_hash = generate_password_hash(password)
@@ -1364,6 +1420,7 @@ def _employee_form(employee):
 
     last_name = ""
     first_name = ""
+    perms = []
     if employee:
         if employee.last_name or employee.first_name:
             last_name = employee.last_name or ""
@@ -1372,11 +1429,17 @@ def _employee_form(employee):
             parts = employee.full_name.split(" ", 1)
             last_name = parts[0]
             first_name = parts[1] if len(parts) > 1 else ""
+        try:
+            perms = json.loads(employee.permissions or "[]")
+        except Exception:  # noqa: BLE001
+            perms = []
     return render_template(
         "admin/employee_edit.html",
         employee=employee,
         last_name=last_name,
         first_name=first_name,
+        editor_sections=EDITOR_SECTIONS,
+        permissions=perms,
     )
 
 

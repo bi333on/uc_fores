@@ -24,7 +24,7 @@
         <input type="text" name="first_name" value="{{ first_name if first_name is defined else '' }}" required>
       </label>
       <label>Роль
-        <select name="role">
+        <select name="role" id="role-select">
           {% for r in ('student', 'editor', 'admin') %}
           <option value="{{ r }}" {% if employee and employee.role == r %}selected{% endif %}>
             {{ {'student': 'Ученик', 'editor': 'Редактор', 'admin': 'Администратор'}[r] }}
@@ -33,6 +33,18 @@
         </select>
         <span class="input-hint">Редактор и администратор могут входить в админку.</span>
       </label>
+      <div class="full" id="permissions-block" {% if not employee or employee.role != 'editor' %}style="display:none"{% endif %}>
+        <div class="panel" style="margin:0; padding:14px; background:#f7fafc">
+          <b>Доступные разделы редактора</b>
+          <div class="muted small" style="margin-bottom:8px">Отметьте галочками, к каким разделам админки будет доступ.</div>
+          {% for key, label in editor_sections.items() %}
+          <label class="checkbox">
+            <input type="checkbox" name="permissions" value="{{ key }}" {% if key in permissions %}checked{% endif %}>
+            {{ label }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
       <label>Пароль
         <input type="text" name="password" id="password" {% if not employee %}required{% endif %} autocomplete="off">
         <span class="input-hint">
@@ -70,6 +82,16 @@
   btn.addEventListener('click', function () {
     input.value = generate();
   });
+
+  var roleSel = document.getElementById('role-select');
+  var permBlock = document.getElementById('permissions-block');
+  function updatePerms() {
+    if (permBlock) permBlock.style.display = roleSel.value === 'editor' ? '' : 'none';
+  }
+  if (roleSel && permBlock) {
+    roleSel.addEventListener('change', updatePerms);
+    updatePerms();
+  }
 })();
 </script>
 {% endblock %}
