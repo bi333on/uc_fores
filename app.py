@@ -211,6 +211,19 @@ def current_admin_sections():
     return session.get("admin_sections") or []
 
 
+def current_admin_display_name() -> str:
+    """Имя/фамилия текущего вошедшего в админку."""
+    if not session.get("admin_logged_in"):
+        return ""
+    if session.get("admin_kind") == "employee":
+        employee = db.session.get(Employee, session.get("admin_id"))
+        if employee:
+            return employee.full_name or employee.employee_id
+        return ""
+    admin = db.session.get(AdminUser, session.get("admin_id"))
+    return admin.username if admin else ""
+
+
 def editor_has_section(endpoint: str) -> bool:
     """Проверяет, разрешён ли текущему редактору endpoint по его разделам."""
     for section, endpoints in SECTION_ENDPOINTS.items():
@@ -500,6 +513,7 @@ def inject_globals():
         "now_year": datetime.now().year,
         "admin_role": current_admin_role(),
         "admin_sections": current_admin_sections(),
+        "admin_display_name": current_admin_display_name(),
     }
 
 

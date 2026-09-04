@@ -108,7 +108,7 @@
 
 <main class="admin-main" id="content">
   <div class="admin-topbar">
-    <span class="muted">{{ site_name }} · Администрирование · {{ 'Администратор' if admin_role == 'admin' else 'Редактор' }}</span>
+    <span class="muted">{{ site_name }} · Администрирование · {{ 'Администратор' if admin_role == 'admin' else 'Редактор' }}{% if admin_display_name %} · {{ admin_display_name }}{% endif %}</span>
     <button class="admin-burger" id="admin-burger" type="button" aria-label="Меню">☰</button>
   </div>
 
