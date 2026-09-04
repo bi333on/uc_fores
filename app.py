@@ -745,13 +745,13 @@ def submit_test(test_id):
             }
         )
 
-    # Процент считается от вопросов, на которые человек дал ответ в этой попытке.
-    total = answered if answered else len(questions)
-    percent = round(correct / total * 100, 1) if total else 0.0
+    # Процент = правильных / отвеченных вопросов.
+    # Если не отвечено ни на один вопрос — 0%.
+    percent = round(correct / answered * 100, 1) if answered else 0.0
     passed = percent >= test.passing_score
 
     attempt.score = correct
-    attempt.total = total
+    attempt.total = answered
     attempt.percent = percent
     attempt.passed = passed
     attempt.status = "finished"
