@@ -64,6 +64,7 @@
       </label>
     </div>
     <label class="checkbox"><input type="checkbox" name="shuffle_questions" {% if not test or test.shuffle_questions %}checked{% endif %}> Перемешивать вопросы</label>
+    <label class="checkbox"><input type="checkbox" name="show_questions_nav" {% if test and test.show_questions_nav %}checked{% endif %}> Показывать блок «Страницы теста»</label>
     <label class="checkbox"><input type="checkbox" name="is_active" {% if not test or test.is_active %}checked{% endif %}> Активен</label>
   </div>
 

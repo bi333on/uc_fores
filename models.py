@@ -85,6 +85,7 @@ class Test(db.Model):
     questions_per_page = db.Column(db.Integer, default=1)  # сколько вопросов на странице (0 = все)
     questions_limit = db.Column(db.Integer, nullable=True)  # сколько всего вопросов показывать в тесте (пусто = все)
     shuffle_questions = db.Column(db.Boolean, default=True)
+    show_questions_nav = db.Column(db.Boolean, default=False)  # показывать блок «Страницы теста»
     is_active = db.Column(db.Boolean, default=True)
     external_quiz_id = db.Column(db.Integer, nullable=True)
     created_at = db.Column(db.DateTime, default=_now)

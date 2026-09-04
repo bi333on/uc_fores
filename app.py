@@ -637,6 +637,7 @@ def take_test(test_id):
         attempt=attempt,
         questions=questions,
         questions_per_page=test.questions_per_page or 1,
+        show_questions_nav=bool(test.show_questions_nav),
     )
 
 
@@ -1043,6 +1044,7 @@ def _test_form(test):
         ql = (request.form.get("questions_limit") or "").strip()
         test.questions_limit = int(ql) if ql.isdigit() and int(ql) > 0 else None
         test.shuffle_questions = request.form.get("shuffle_questions") == "on"
+        test.show_questions_nav = request.form.get("show_questions_nav") == "on"
         test.is_active = request.form.get("is_active") == "on"
         test.description = (request.form.get("description") or "").strip()
         db.session.commit()
@@ -1078,6 +1080,7 @@ def admin_test_duplicate(test_id):
         questions_per_page=src.questions_per_page or 1,
         questions_limit=src.questions_limit,
         shuffle_questions=src.shuffle_questions,
+        show_questions_nav=src.show_questions_nav,
         is_active=False,
     )
     db.session.add(dup)
