@@ -1,28 +1,37 @@
-{% macro pagination(page, pages, total, endpoint, **filters) %}
+{% macro pagination(page, pages, total, endpoint, q=None, category_id=None, test_id=None, employee_id=None) %}
 {% if pages > 1 %}
 <nav class="pagination" aria-label="Пагинация">
-  <a class="page-link {{ 'disabled' if page <= 1 else '' }}"
-     href="{{ url_for(endpoint, page=page-1, **filters) if page > 1 else '#' }}">← Назад</a>
+  {% if page > 1 %}
+  <a class="page-link" href="{{ url_for(endpoint, page=page-1, q=q, category_id=category_id, test_id=test_id, employee_id=employee_id) }}">← Назад</a>
+  {% else %}
+  <span class="page-link disabled">← Назад</span>
+  {% endif %}
 
   {% set start = [1, page - 2] | max %}
   {% set end = [pages, page + 2] | min %}
   {% if start > 1 %}
-    <a class="page-link" href="{{ url_for(endpoint, page=1, **filters) }}">1</a>
+    <a class="page-link" href="{{ url_for(endpoint, page=1, q=q, category_id=category_id, test_id=test_id, employee_id=employee_id) }}">1</a>
     {% if start > 2 %}<span class="page-ellipsis">…</span>{% endif %}
   {% endif %}
 
   {% for p in range(start, end + 1) %}
-    <a class="page-link {{ 'active' if p == page else '' }}"
-       href="{{ url_for(endpoint, page=p, **filters) }}">{{ p }}</a>
+    {% if p == page %}
+    <span class="page-link active">{{ p }}</span>
+    {% else %}
+    <a class="page-link" href="{{ url_for(endpoint, page=p, q=q, category_id=category_id, test_id=test_id, employee_id=employee_id) }}">{{ p }}</a>
+    {% endif %}
   {% endfor %}
 
   {% if end < pages %}
     {% if end < pages - 1 %}<span class="page-ellipsis">…</span>{% endif %}
-    <a class="page-link" href="{{ url_for(endpoint, page=pages, **filters) }}">{{ pages }}</a>
+    <a class="page-link" href="{{ url_for(endpoint, page=pages, q=q, category_id=category_id, test_id=test_id, employee_id=employee_id) }}">{{ pages }}</a>
   {% endif %}
 
-  <a class="page-link {{ 'disabled' if page >= pages else '' }}"
-     href="{{ url_for(endpoint, page=page+1, **filters) if page < pages else '#' }}">Вперёд →</a>
+  {% if page < pages %}
+  <a class="page-link" href="{{ url_for(endpoint, page=page+1, q=q, category_id=category_id, test_id=test_id, employee_id=employee_id) }}">Вперёд →</a>
+  {% else %}
+  <span class="page-link disabled">Вперёд →</span>
+  {% endif %}
 </nav>
 <div class="pagination-info">Показано записей: {{ total }}</div>
 {% endif %}

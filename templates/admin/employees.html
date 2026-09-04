@@ -45,5 +45,5 @@
 {% endif %}
 
 {% from "admin/_pagination.html" import pagination %}
-{{ pagination(page, pages, total, 'admin_employees', q=q) }}
+{{ pagination(page, pages, total, 'admin_employees', q=(q if q else None)) }}
 {% endblock %}
