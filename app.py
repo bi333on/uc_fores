@@ -1416,6 +1416,21 @@ def _smart_guess(header, spec):
     result = {}
     for key, _label, _req in spec["fields"]:
         result[key] = find(spec["keywords"].get(key, [key]))
+
+    # Для нумерованных полей вида answer_N — дополнительно ищем колонку,
+    # в названии которой есть слово «вариант/ответ/answer» и номер N,
+    # напр. «Вариант ответа 1», «Вариант №1», «Ответ 1», «Answer 1».
+    for key in list(result.keys()):
+        if result.get(key):
+            continue
+        m = re.match(r"answer_(\d+)$", key)
+        if not m:
+            continue
+        num = m.group(1)
+        for i, h in lowered:
+            if re.search(r"(вариант|ответ|answer|option|a)" + r"[^0-9]*" + num + r"(?![0-9])", h):
+                result[key] = header[i]
+                break
     return result
 
 
@@ -1641,10 +1656,18 @@ def _run_import_questions(rows, value, test_id):
             a = value(row, f"answer_{i}")
             if a:
                 answers.append(a)
+
+        # Если варианты не разложены по отдельным колонкам, а идут одной
+        # строкой в «Вариант 1» через ; или |, разбиваем её.
+        if not answers:
+            combined = value(row, "answer_1")
+            if combined and re.search(r"[;|]", combined):
+                answers = [x.strip() for x in re.split(r"[;|]", combined) if x.strip()]
+
         correct_raw = value(row, "correct")
         if correct_raw:
-            # Поддерживает: номера через запятую "1,3" или текст через ";" 
-            parts = re.split(r"[,;]", correct_raw)
+            # Поддерживает: номера через запятую "1,3" или текст через ";"
+            parts = re.split(r"[,;|]", correct_raw)
             for p in parts:
                 p = p.strip()
                 if not p:
@@ -1656,6 +1679,7 @@ def _run_import_questions(rows, value, test_id):
                 else:
                     correct.add(p)
 
+        created_options = 0
         for i, ans in enumerate(answers):
             db.session.add(
                 AnswerOption(
@@ -1665,6 +1689,7 @@ def _run_import_questions(rows, value, test_id):
                     sort_order=i + 1,
                 )
             )
+            created_options += 1
         created += 1
     db.session.commit()
     return jsonify(
